@@ -1,0 +1,33 @@
+# Dependency directories
+node_modules/
+**/node_modules/
+
+# Deck project working directories and generated outputs
+out/
+work/
+src/
+**/out/
+**/work/
+**/src/
+
+# Generated package archives
+*.zip
+
+# Generated office and render outputs
+*.pptx
+*.pdf
+*.html
+
+# Python and JS build noise
+__pycache__/
+*.pyc
+.pytest_cache/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local OS/editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

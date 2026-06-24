@@ -1,0 +1,66 @@
+{
+  "id": "corporate-light",
+  "label": "Corporate Seminar (light)",
+  "derivedFrom": ["Title_CargoOperation", "Agenda", "LearningObjectives", "ChemicalTankerOverview"],
+  "canvas": { "w": 1672, "h": 941 },
+
+  "dimensions": {
+    "background": { "type": "light", "base": "#FFFFFF", "panel": "#F4F7FB", "angle": 0, "texture": "dots-faint+waves" },
+    "colorTemp": "cool",
+    "hero": "photo-diagonal-crop",
+    "geometry": "diagonal-cut + soft-shadow-cards",
+    "mood": "corporate-polished"
+  },
+
+  "palette": {
+    "bg": "#FFFFFF",
+    "navy": "#0E2A47",
+    "blue": "#1B4F8A",
+    "teal": "#2BA9C9",
+    "orange": "#E8732A",
+    "ink": "#14223A",
+    "inkMuted": "#51627A",
+    "panelFill": "#FFFFFF",
+    "panelBorder": "#DCE5EE",
+    "darkPanel": "#0E2A47"
+  },
+
+  "typography": {
+    "family": "Pretendard, 'Noto Sans CJK KR', system-ui, sans-serif",
+    "titleWeight": 800,
+    "titleSize": 58,
+    "titleKRColor": "#0E2A47",
+    "titleENColor": "#0E2A47",
+    "titleUpper": true,
+    "eyebrow": { "size": 17, "color": "#2BA9C9", "tracking": 3, "upper": true },
+    "subtitle": { "size": 22, "color": "#51627A", "highlight": "#1B4F8A" },
+    "body": { "size": 17, "color": "#3A4A60" }
+  },
+
+  "panel": { "radius": 10, "borderWidth": 1, "pad": 22 },
+
+  "icon": { "style": "filled-navy", "color": "#0E2A47", "accentDot": "#2BA9C9", "warnColor": "#E8732A", "dangerColor": "#D24A36" },
+
+  "header": {
+    "style": "titlebar",
+    "barFill": "#FFFFFF",
+    "tick": "#E8732A",
+    "color": "#0E2A47",
+    "glyph": "ship-navy"
+  },
+
+  "accent": {
+    "devices": ["diagonal-cut", "hexagon-mesh", "wave-lines", "orange-tick", "numbered-circles"],
+    "line": "#E8732A",
+    "stepNumberColor": "#0E2A47",
+    "stepStyle": "circle-fill"
+  },
+
+  "footer": { "style": "wave-silhouette", "glyph": "ship", "ink": "#9FB1C4", "tag": false },
+
+  "components": {
+    "default": { "fill": "#FFFFFF", "border": "#DCE5EE", "ink": "#14223A", "sub": "#51627A", "shadow": "0 10px 24px rgba(14,42,75,0.10)", "badge": "#0E2A47" },
+    "alt":     { "fill": "#0E2A47", "border": "#0E2A47", "ink": "#FFFFFF", "sub": "#AFC4DC", "shadow": "none", "badge": "#2BA9C9" },
+    "warn":    { "fill": "#FFF7F2", "border": "#E8732A", "ink": "#7A3D1E", "sub": "#B5703F", "shadow": "none", "badge": "#E8732A" }
+  }
+}

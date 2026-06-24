@@ -1,0 +1,13 @@
+{
+  "name": "editable-pptx-skillset-smoke-tests",
+  "version": "0.1.0",
+  "requiredSkills": [
+    "slide-text-layer-inpaint",
+    "slide-image-dual-render",
+    "slide-visual-polish-qa",
+    "slide-editable-deck-orchestrator"
+  ],
+  "layoutTest": "tests/verify_skillset_layout.js",
+  "pythonCompileTest": "tests/verify_python_scripts.py"
+}
+

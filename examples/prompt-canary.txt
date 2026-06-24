@@ -1,0 +1,20 @@
+Use $slide-editable-deck-orchestrator.
+
+Run a one-slide canary conversion for this project.
+
+Quality target:
+canary
+
+Rules:
+- Do not modify Skill files.
+- Use one representative slide only.
+- Use hardlocked reconstruction where practical.
+- Run enough validation to confirm PPTX/HTML generation and basic openability.
+- Do not run a full deck conversion.
+
+Report:
+- commands run
+- generated canary outputs
+- whether the canary is safe to expand to blocking-zero
+- any missing dependencies
+

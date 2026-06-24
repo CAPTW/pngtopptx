@@ -1,0 +1,15 @@
+Use $slide-visual-polish-qa.
+
+Run visual QA only for an existing editable PPTX and HTML output.
+
+This is QA triage, not reconstruction.
+Do not modify Skill files.
+Do not modify deck reconstruction files.
+
+Inputs:
+- source slide images under src/
+- editable PPTX under out/
+- HTML preview under out/
+
+Run source/PPTX/HTML comparison, classify each slide as pass, needs_polish, or fail, and summarize the polish backlog.
+

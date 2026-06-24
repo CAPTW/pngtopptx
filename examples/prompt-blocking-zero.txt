@@ -1,0 +1,28 @@
+Use $slide-editable-deck-orchestrator.
+
+Convert the images in this project into one editable PPTX.
+
+Quality target:
+blocking-zero
+
+Rules:
+- Do not modify Skill files.
+- Stop and report if a Skill bug is found.
+- Use text-layer preprocessing when useful.
+- Use hardlocked editable reconstruction.
+- Run visual QA.
+- Plan and run repair waves until no slide remains fail/blocking.
+- Needs_polish warnings are acceptable but must be reported.
+
+Deliver:
+- final editable PPTX
+- HTML preview
+- render trace
+- native object manifest
+- crop coverage summary
+- editability inventory
+- baked crop report
+- visual QA summary
+- contact sheet
+- polish backlog
+

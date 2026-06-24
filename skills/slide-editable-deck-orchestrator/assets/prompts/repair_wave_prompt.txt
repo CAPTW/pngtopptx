@@ -1,0 +1,33 @@
+Use $slide-image-dual-render and $slide-visual-polish-qa.
+
+Run a targeted repair wave.
+
+Project root: {{PROJECT_ROOT}}
+Target source slides: {{SLIDES}}
+Quality level: {{QUALITY_LEVEL}}
+Issue types: {{ISSUE_TYPES}}
+Recommended strategy:
+{{STRATEGY}}
+
+When invoking orchestrator scripts, use `--quality-level {{QUALITY_LEVEL}}`.
+
+This is deck reconstruction polish, not Skill development.
+Do not modify Skill files. If a Skill bug is found, stop and report it.
+Do not weaken hardlock gates or visual QA thresholds.
+Do not use full-slide image backgrounds or crop-heavy preservation.
+Keep semantic text, tables, labels, and callouts native editable where feasible.
+Use small metadata-rich crops only for justified non-text technical, decorative, texture, or 3D detail.
+
+After edits, run the approved hardlocked pipeline for this wave, then run visual QA with source-slide mapping:
+- rasterize_pptx.py --source-slides {{SLIDES}}
+- capture_html_screenshot.py --source-slides {{SLIDES}}
+- compare_slide_images.py --slides {{SLIDES}}
+- generate_visual_qa_summary.js
+- enforce_visual_qa.js
+
+Success target:
+- route hardlock passes
+- reconstruction hardlock passes
+- PPTX openability passes
+- source-slide mapping works
+- no target slide remains fail/blocking

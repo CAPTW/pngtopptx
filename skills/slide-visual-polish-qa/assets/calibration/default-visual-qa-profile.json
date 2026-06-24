@@ -1,0 +1,116 @@
+{
+  "schemaVersion": "slide-visual-polish-qa.calibration-profile.v1",
+  "name": "default-visual-qa-profile",
+  "createdFrom": {
+    "project": "C:\\Users\\USER\\Downloads",
+    "date": "2026-06-20",
+    "knownGoodSlide": 1,
+    "borderlineSlide": 5,
+    "knownBadSlide": 12
+  },
+  "knownGoodMetricBands": {
+    "sourceRenderSimilarity": {
+      "pixelMax": 0.21,
+      "maeMax": 0.105,
+      "edgeMax": 0.115,
+      "ssimMin": 0.6,
+      "paletteMax": 0.15
+    },
+    "pptxHtmlConsistency": {
+      "pixelMax": 0.11,
+      "maeMax": 0.055,
+      "edgeMax": 0.09,
+      "ssimMin": 0.79,
+      "paletteMax": 0.055
+    }
+  },
+  "borderlineMetricBands": {
+    "sourceRenderSimilarity": {
+      "pixelMax": 0.24,
+      "maeMax": 0.13,
+      "edgeMax": 0.135,
+      "ssimMin": 0.44,
+      "paletteMax": 0.23
+    },
+    "pptxHtmlConsistency": {
+      "pixelMax": 0.13,
+      "maeMax": 0.065,
+      "edgeMax": 0.09,
+      "ssimMin": 0.74,
+      "paletteMax": 0.07
+    }
+  },
+  "knownBadMetricBands": {
+    "sourceRenderSimilarity": {
+      "pixelMin": 0.25,
+      "maeMin": 0.14,
+      "edgeMin": 0.145,
+      "ssimMax": 0.42,
+      "paletteMin": 0.28,
+      "requiredSignalsForBlocking": 2
+    },
+    "pptxHtmlConsistency": {
+      "pixelMin": 0.13,
+      "maeMin": 0.065,
+      "edgeMin": 0.095,
+      "ssimMax": 0.72,
+      "paletteMin": 0.08,
+      "requiredSignalsForBlocking": 3
+    }
+  },
+  "modePolicies": {
+    "qa-draft": {
+      "failOn": [
+        "missing_artifact",
+        "explicit_blocking_critical"
+      ],
+      "allowNeedsPolish": true,
+      "allowNoticeable": true,
+      "allowMinor": true
+    },
+    "qa-polish": {
+      "failOn": [
+        "blocking"
+      ],
+      "allowNeedsPolish": true,
+      "requireFixPlansFor": [
+        "noticeable",
+        "blocking"
+      ],
+      "pptxHtmlMismatchBlockingOnlyWhen": [
+        "key_content_affected",
+        "clipping",
+        "layout_break",
+        "readability_loss",
+        "source_render_blocking"
+      ]
+    },
+    "qa-strict": {
+      "failOn": [
+        "blocking",
+        "noticeable",
+        "material_pptx_html_mismatch"
+      ],
+      "allowNeedsPolish": false,
+      "requireFixPlansFor": [
+        "minor",
+        "noticeable",
+        "blocking"
+      ]
+    }
+  },
+  "recommendedActionBySeverity": {
+    "pass": "Accept; no visual fix required.",
+    "minor": "Accept in qa-polish; optionally queue low-priority polish.",
+    "noticeable": "Allow in qa-polish only with a fix plan; queue for focused polish.",
+    "blocking": "Fail; fix reconstruction before accepting the slide."
+  },
+  "notes": [
+    "Metrics are evidence, not judgment.",
+    "Low SSIM alone does not create a qa-polish blocking failure.",
+    "Known-good-like editable reconstruction drift should not fail qa-polish.",
+    "Borderline-like drift should become needs_polish in qa-polish.",
+    "Known-bad-like drift plus content/detail loss remains blocking.",
+    "Slide 12 must not be made to pass by threshold relaxation."
+  ]
+}

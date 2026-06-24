@@ -1,0 +1,27 @@
+Use $slide-text-layer-inpaint, $slide-image-dual-render, and $slide-visual-polish-qa.
+
+Run an editable deck conversion workflow for:
+Project root: {{PROJECT_ROOT}}
+Slides: {{SLIDES}}
+Quality level: {{QUALITY_LEVEL}}
+
+When invoking orchestrator scripts, use `--quality-level {{QUALITY_LEVEL}}`.
+
+This is deck conversion work, not Skill development.
+Do not modify Skill files. If a Skill bug is found, stop and report it before patching.
+Do not weaken hardlock gates or visual QA thresholds.
+Do not use full-slide screenshot shortcuts.
+
+Workflow:
+1. Prepare and verify source images under src/.
+2. Run text-layer preprocessing only where useful for dense text/pseudo-text slides.
+3. Run the hardlocked slide-image-dual-render pipeline for editable PPTX and HTML.
+4. Run slide-visual-polish-qa on the full deck.
+5. Produce pass / needs_polish / fail classification and a repair backlog.
+
+Final target for blocking-zero or higher:
+- route hardlock passes
+- reconstruction hardlock passes
+- PPTX openability passes
+- visual QA has 0 fail/blocking slides
+- needs_polish warnings are reported as backlog

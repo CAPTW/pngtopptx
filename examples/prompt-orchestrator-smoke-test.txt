@@ -1,0 +1,16 @@
+Use $slide-editable-deck-orchestrator.
+
+Run a non-destructive orchestrator smoke test on this completed deck project.
+
+This is orchestration validation, not deck conversion.
+Do not modify Skill files.
+Do not modify deck reconstruction files.
+Do not rerun full deck conversion.
+Do not rerun visual QA unless an existing required summary is missing.
+
+Goal:
+- read the existing final visual QA summary
+- confirm pass / needs_polish / fail counts
+- confirm blocking-zero completion if there are 0 fail/blocking slides
+- generate optional polish backlog planning only if requested
+

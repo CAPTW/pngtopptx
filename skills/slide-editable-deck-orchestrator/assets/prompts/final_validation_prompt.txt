@@ -1,0 +1,35 @@
+Use $slide-image-dual-render and $slide-visual-polish-qa.
+
+Run final full-deck validation and delivery packaging.
+
+Project root: {{PROJECT_ROOT}}
+Slides: {{SLIDES}}
+Quality level: {{QUALITY_LEVEL}}
+
+When invoking orchestrator scripts, use `--quality-level {{QUALITY_LEVEL}}`.
+
+This is final validation, not Skill development.
+Do not modify Skill files or deck reconstruction files unless a hardlock/final validation bug is found; if that happens, stop and report.
+Do not weaken gates or visual QA thresholds.
+
+Run:
+1. Full hardlocked editable PPTX/HTML rebuild.
+2. Final gate with PPTX openability required.
+3. Full-deck visual QA using source-slide mapping.
+4. Delivery artifact review.
+
+Required delivery artifacts:
+- out/deck-final-editable.pptx
+- out/deck-final-editable.html
+- out/render_trace.json
+- out/native_object_manifest.json
+- out/crop_coverage_summary.json
+- out/editability_inventory.md
+- out/baked_crop_regions.json
+- out/visual_qa_summary_final.json
+- out/visual_qa_summary_final.md
+- out/qa/contact_sheet.png
+
+Final target:
+- 0 fail/blocking slides
+- needs_polish warnings are acceptable backlog unless quality level is strict

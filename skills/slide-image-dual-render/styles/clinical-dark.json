@@ -1,0 +1,66 @@
+{
+  "id": "clinical-dark",
+  "label": "Clinical Safety / Technical Infographic (dark)",
+  "derivedFrom": ["독성생리_Slide01", "CH38_HighViscosity", "CH34_VoyageCare", "InhibitedCargo_Slide063"],
+  "canvas": { "w": 1672, "h": 941 },
+
+  "dimensions": {
+    "background": { "type": "gradient-dark", "from": "#0E1A2B", "to": "#070C14", "angle": 155, "texture": "blueprint-faint" },
+    "colorTemp": "cool",
+    "hero": "photoreal-crop",
+    "geometry": "rounded-bordered-panels",
+    "mood": "clinical-technical"
+  },
+
+  "palette": {
+    "bg": "#0B1320",
+    "ink": "#E8EEF5",
+    "inkMuted": "#9FB3C8",
+    "info": "#33A9E0",
+    "gold": "#E8B23C",
+    "danger": "#E5484D",
+    "ok": "#46C07A",
+    "panelFill": "rgba(255,255,255,0.045)",
+    "panelBorder": "#27496A",
+    "cardFill": "#F4F8FC",
+    "cardInk": "#142433"
+  },
+
+  "typography": {
+    "family": "Pretendard, 'Noto Sans CJK KR', system-ui, sans-serif",
+    "titleWeight": 800,
+    "titleSize": 60,
+    "titleKRColor": "#FFFFFF",
+    "titleENColor": "#E8B23C",
+    "titleUpper": false,
+    "eyebrow": { "size": 18, "color": "#7FC6EE", "tracking": 2, "upper": false },
+    "subtitle": { "size": 23, "color": "#AFC2D6", "highlight": "#5FC8F2" },
+    "body": { "size": 17, "color": "#C7D4E2" }
+  },
+
+  "panel": { "radius": 12, "borderWidth": 1, "pad": 22 },
+
+  "icon": { "style": "line", "stroke": 2, "color": "#33A9E0", "warnColor": "#E8B23C", "dangerColor": "#E5484D" },
+
+  "header": {
+    "style": "breadcrumb",
+    "sep": "\u203a",
+    "color": "#7FC6EE",
+    "pill": { "border": "#27496A", "ink": "#AFC2D6" }
+  },
+
+  "accent": {
+    "devices": ["chevron-roadmap", "colored-numerals", "thin-connectors"],
+    "line": "#E8B23C",
+    "stepNumberColor": "#33A9E0",
+    "stepStyle": "numeral"
+  },
+
+  "footer": { "style": "thin-band", "glyph": "wheel", "ink": "#7E93A8", "tag": true },
+
+  "components": {
+    "default": { "fill": "rgba(255,255,255,0.045)", "border": "#27496A", "ink": "#E8EEF5", "sub": "#9FB3C8", "shadow": "none", "badge": "#33A9E0" },
+    "alt":     { "fill": "#F4F8FC", "border": "#D7E2EC", "ink": "#142433", "sub": "#4A5A6E", "shadow": "none", "badge": "#0E2A47" },
+    "warn":    { "fill": "rgba(229,72,77,0.07)", "border": "#E5484D", "ink": "#F2C0C2", "sub": "#E58C8F", "shadow": "none", "badge": "#E5484D" }
+  }
+}
