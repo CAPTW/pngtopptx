@@ -1,0 +1,41 @@
+{
+  "example": "generated-cooling-loop",
+  "sourceImage": {
+    "path": "source.png",
+    "width": 1672,
+    "height": 941
+  },
+  "pptx": {
+    "path": "editable-reconstruction.pptx",
+    "strictPackageValidationPassed": true,
+    "strictPackageValidationErrors": 0,
+    "strictPackageValidationWarnings": 0
+  },
+  "pipeline": {
+    "quality": "preservation",
+    "finalGatePassed": true,
+    "cropCoverageTotalRatio": 0,
+    "largestCropAreaRatio": 0
+  },
+  "nativeObjectManifest": {
+    "total": 659,
+    "byType": {
+      "text": 242,
+      "panel": 226,
+      "rule": 92,
+      "shape": 84,
+      "icon": 14,
+      "image": 1
+    },
+    "imageNote": "The single non-icon image object is the generated slide background, not the source screenshot."
+  },
+  "visualQa": {
+    "overallStatus": "fail",
+    "interpretation": "Strict visual QA failed because this example prioritizes editable native reconstruction over pixel-identical reproduction of distorted microtext and ornamental density.",
+    "pptxVsSource": {
+      "pixelDifferenceRatio": 0.2583,
+      "approxSsim": 0.4304,
+      "edgeDifferenceRatio": 0.1742
+    }
+  }
+}

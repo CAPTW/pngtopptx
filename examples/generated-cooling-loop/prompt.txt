@@ -1,0 +1,8 @@
+Use case: productivity-visual
+Asset type: 16:9 widescreen presentation slide source image for validating editable PPTX reconstruction
+Primary request: Create a dense, modern technical infographic slide about "AI Data Center Cooling Loop Risk Map". The slide should look like a finished slide screenshot, not a website or poster.
+Canvas and layout: exact 16:9 landscape composition. Dark navy technical theme with cyan, white, lime, and amber accents. Dense but organized layout with many small panels and readable labels.
+Content: large title at top left: "AI Data Center Cooling Loop Risk Map". Subtitle: "From sensor drift to thermal throttling: where operations teams lose margin". Include four main zones: 1) Sensor Layer, 2) Pump & Chiller Loop, 3) Rack Heat Load, 4) Response Playbook. Include a center schematic with arrows, small tanks/pumps/racks, a mini heatmap grid, a 5-row risk table, KPI chips, numbered callouts, and a footer reading "Synthetic validation slide · Editable PPTX reconstruction example · Slide 001".
+Style/medium: polished vector-like business presentation, dense dashboard/infographic, crisp icons, thin rules, rounded panels, table grid, chart snippets.
+Text constraints: render the major headings in clear English; smaller micro text may be decorative but should look like real slide labels. No brand logos, no watermarks.
+Avoid: photo-realistic people, random logos, misshapen UI, decorative blobs, extreme gradients, low-density blank space.

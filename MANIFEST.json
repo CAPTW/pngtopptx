@@ -2,7 +2,7 @@
   "name": "editable-pptx-skillset",
   "version": "0.1.0",
   "description": "Local Codex SkillSet for converting slide images into editable PPTX with text-layer preprocessing, hardlocked reconstruction, visual QA, and orchestration.",
-  "generatedAt": "2026-06-24T07:37:07.0335149Z",
+  "generatedAt": "2026-06-24T08:18:10.7598333Z",
   "skills": [
     {
       "name": "slide-text-layer-inpaint",
@@ -36,13 +36,13 @@
     "font files",
     "node_modules",
     "private input decks",
-    "generated outputs"
+    "ad hoc generated outputs outside curated public examples"
   ],
   "fileChecksums": [
     {
       "path": ".gitignore",
-      "sha256": "ca0d265a3cb13caa369638c795065cc4da4cb1800aa48690fa694fca4c66bdaa",
-      "bytes": 421
+      "sha256": "94ed59206dd4a67115156aafbb493ca17b8bbaa5fe267b022bab8f6b0a1ecfa6",
+      "bytes": 756
     },
     {
       "path": "agents\\codex-agents\\deck-orchestrator.toml",
@@ -111,13 +111,53 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "d6d00e0d0bfafaf6dc47fe94d0bbbd58ef38813dc78b5e44a9774ba6bf726410",
-      "bytes": 401
+      "sha256": "04f3920b30a3c40f92fe280350207fde0298b33d940383b86708ea900d8836cc",
+      "bytes": 648
     },
     {
       "path": "DEPENDENCIES.md",
       "sha256": "790774ffa4918c99ff487bc83212a24cc42d67b965549269c240aba844d8f964",
       "bytes": 825
+    },
+    {
+      "path": "examples\\generated-cooling-loop\\comparison-contact-sheet.png",
+      "sha256": "ba0dbe77d277305e6fb010ae444d5708f213d4ce75471698321d3cda53019101",
+      "bytes": 360363
+    },
+    {
+      "path": "examples\\generated-cooling-loop\\editable-reconstruction.pptx",
+      "sha256": "71cb38e3af31e895c45bf952ba19faf991a5904ccf04348a52f1c392c66d31a0",
+      "bytes": 651519
+    },
+    {
+      "path": "examples\\generated-cooling-loop\\object-summary.json",
+      "sha256": "a313f1ae63cc628505f02a861ed7adb04ea547831103006382c366ef6cd03006",
+      "bytes": 1131
+    },
+    {
+      "path": "examples\\generated-cooling-loop\\prompt.txt",
+      "sha256": "1204b7ebe7d72dd31183ba9b879f95f709bc60c946f8fd514fddc62b0cc5a95f",
+      "bytes": 1479
+    },
+    {
+      "path": "examples\\generated-cooling-loop\\README.md",
+      "sha256": "75d63e3fe47be742dfeb71b2a272cf6f3957259aecc2b075ef0fbf571ebe7ea3",
+      "bytes": 2627
+    },
+    {
+      "path": "examples\\generated-cooling-loop\\reconstruction-slides.js",
+      "sha256": "4795245a52504810e7912bac5e6a774af8f70fa3af4f33d2cb3efcacc278e799",
+      "bytes": 20517
+    },
+    {
+      "path": "examples\\generated-cooling-loop\\source.png",
+      "sha256": "834120bb64a9a6c5a6d02b3b9b1a0f075b300cf2b0436f7f1000bc5f97a20650",
+      "bytes": 1785386
+    },
+    {
+      "path": "examples\\generated-cooling-loop\\visual-qa-summary.md",
+      "sha256": "dd99a19717f16ca9b6e21d065736c97c4c2f13c90fe8a55995880fcba73978c5",
+      "bytes": 709
     },
     {
       "path": "examples\\prompt-blocking-zero.txt",
@@ -140,6 +180,11 @@
       "bytes": 420
     },
     {
+      "path": "examples\\README.md",
+      "sha256": "c4c293bffba4c1f7be5eec28afe18f475e6865a1cec4ebf49ed464079ed2c0d6",
+      "bytes": 701
+    },
+    {
       "path": "INSTALL.md",
       "sha256": "5ace44bf67b660935285233af4781d0d7814637b9b899ecc0d82ec64bffcf255",
       "bytes": 934
@@ -151,13 +196,13 @@
     },
     {
       "path": "package_skillset.ps1",
-      "sha256": "936ea09f42e900c7755d7a9cf8aaaed1a6efb6d9f11741fab327a8f9a81a3106",
-      "bytes": 6657
+      "sha256": "9b18728d4fd805e511d32fd30b569237e86a4a82a3ec3a3c6bfc5c0de490c9af",
+      "bytes": 6696
     },
     {
       "path": "README.md",
-      "sha256": "d3c06c5540cb8c526d8d9a851d0fc3e74b2d4f3f22cceb29e8444f6b1e46cb32",
-      "bytes": 6659
+      "sha256": "ec34b3bb8e72c7afef564cad6831f0964a5b9cc44b9f497813572767d11496c4",
+      "bytes": 7489
     },
     {
       "path": "skills\\slide-editable-deck-orchestrator\\assets\\codex-agents\\deck-orchestrator.toml",

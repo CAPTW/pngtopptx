@@ -111,7 +111,7 @@ function New-Manifest($Root) {
       "font files",
       "node_modules",
       "private input decks",
-      "generated outputs"
+      "ad hoc generated outputs outside curated public examples"
     )
     fileChecksums = $files
   }

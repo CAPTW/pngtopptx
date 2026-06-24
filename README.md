@@ -22,6 +22,18 @@ This repository is not an official OpenAI or Codex project.
 - Records objective evidence such as native object manifests and crop coverage summaries.
 - Provides validation gates for route integrity, crop metadata, visual QA, and PPTX package openability.
 
+## Public Success Case
+
+A public dense-slide conversion example is included in
+[examples/generated-cooling-loop](examples/generated-cooling-loop/).
+
+It contains the synthetic source image, editable PPTX output, comparison contact
+sheet, reconstruction code, prompt, and QA summary. The example is intentionally
+documented as a success case with limitations: package validation and editability
+pass, while strict pixel visual QA reports the expected differences caused by
+AI microtext, ornamental density, font/rasterization differences, and native
+redrawing instead of screenshot embedding.
+
 ## Included Skills
 
 The package installs four local Codex skills:
@@ -161,12 +173,16 @@ Every crop should have metadata explaining why it is not reconstructed and what 
 This repository intentionally does not include:
 
 - private input decks
-- source slide images
-- generated PPTX/HTML outputs
+- private source slide images
+- ad hoc generated PPTX/HTML outputs
 - `node_modules`
 - local work directories
 - font files
 - rasterized QA images
+
+Curated public validation cases under `examples/` are the only exception. They
+may include small source images, PPTX outputs, contact sheets, and QA summaries
+when those files are part of the public reproducibility story.
 
 Keep real conversion work in a separate deck project and commit only reusable skill code, scripts, references, tests, and examples.
 

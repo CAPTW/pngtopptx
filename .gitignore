@@ -18,6 +18,15 @@ src/
 *.pdf
 *.html
 
+# Curated public validation examples are intentionally committed.
+!examples/generated-cooling-loop/
+!examples/generated-cooling-loop/*.png
+!examples/generated-cooling-loop/*.pptx
+!examples/generated-cooling-loop/*.md
+!examples/generated-cooling-loop/*.txt
+!examples/generated-cooling-loop/*.js
+!examples/generated-cooling-loop/*.json
+
 # Python and JS build noise
 __pycache__/
 *.pyc
