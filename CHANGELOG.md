@@ -4,6 +4,8 @@
 
 - Adds a public dense synthetic slide success case with source PNG, editable PPTX, contact sheet, QA summary, and limitations documentation.
 - Documents the curated-example exception to the normal generated-output exclusion policy.
+- Adds a non-developer quickstart and expands install/verification troubleshooting.
+- Adds static HTML pages for browser-based visual inspection of the example.
 
 ## 0.1.0
 

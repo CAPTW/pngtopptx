@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Generated Cooling Loop - pngtopptx Example</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #07101d;
+      --panel: #0f2034;
+      --panel2: #0a1828;
+      --line: #2b4c69;
+      --text: #eef6fb;
+      --muted: #abc0d1;
+      --cyan: #2ed3f2;
+      --green: #a7dd55;
+      --amber: #f4b73f;
+      --red: #ff615b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: linear-gradient(180deg, #0b1e35 0%, var(--bg) 42%, #040813 100%);
+      color: var(--text);
+      font: 15px/1.5 Arial, "Segoe UI", sans-serif;
+    }
+    header, main, footer { max-width: 1240px; margin: 0 auto; padding: 0 22px; }
+    header {
+      min-height: 42vh;
+      display: grid;
+      align-content: center;
+      padding-top: 40px;
+      padding-bottom: 30px;
+    }
+    h1 { margin: 0 0 10px; font-size: clamp(32px, 5vw, 56px); line-height: 1.04; letter-spacing: 0; }
+    h2 { margin: 38px 0 14px; font-size: 24px; }
+    h3 { margin: 0 0 6px; font-size: 15px; }
+    p { color: var(--muted); max-width: 900px; }
+    a { color: var(--cyan); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+    .button {
+      display: inline-flex;
+      align-items: center;
+      min-height: 40px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 9px 13px;
+      background: rgba(15,32,52,.8);
+      color: var(--text);
+      font-weight: 700;
+    }
+    .primary { border-color: var(--cyan); color: #04131d; background: var(--cyan); }
+    .image-panel {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(8,20,34,.72);
+      overflow: hidden;
+      margin: 14px 0 24px;
+    }
+    .image-panel img { display: block; width: 100%; height: auto; }
+    .caption { padding: 10px 12px; color: var(--muted); border-top: 1px solid var(--line); }
+    .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(15,32,52,.78);
+      padding: 14px;
+      min-height: 110px;
+    }
+    .metric { font-size: 28px; font-weight: 800; color: var(--green); line-height: 1; }
+    .warn .metric { color: var(--amber); }
+    .fail .metric { color: var(--red); }
+    .small { font-size: 13px; color: var(--muted); }
+    code {
+      color: var(--amber);
+      background: rgba(255,255,255,.06);
+      padding: 2px 5px;
+      border-radius: 4px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: rgba(10,24,40,.76);
+    }
+    th, td { padding: 10px 12px; border-bottom: 1px solid var(--line); text-align: left; }
+    th { color: var(--text); background: rgba(31,64,96,.55); }
+    td { color: var(--muted); }
+    footer { padding-top: 28px; padding-bottom: 44px; color: var(--muted); }
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 560px) {
+      .grid { grid-template-columns: 1fr; }
+      header, main, footer { padding-left: 16px; padding-right: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Generated Cooling Loop Example</h1>
+    <p>
+      A dense synthetic 16:9 slide converted into an editable PPTX with the
+      pngtopptx Codex SkillSet. This page is meant for quick visual inspection
+      in a browser before opening PowerPoint.
+    </p>
+    <div class="actions">
+      <a class="button primary" href="editable-reconstruction.pptx">Download Editable PPTX</a>
+      <a class="button" href="source.png">Open Source PNG</a>
+      <a class="button" href="comparison-contact-sheet.png">Open Contact Sheet</a>
+      <a class="button" href="visual-qa-summary.md">Read QA Summary</a>
+    </div>
+  </header>
+
+  <main>
+    <h2>Source Slide</h2>
+    <div class="image-panel">
+      <img src="source.png" alt="Synthetic AI data center cooling loop source slide">
+      <div class="caption">Synthetic 1672x941 source image generated for validation.</div>
+    </div>
+
+    <h2>Source vs PPTX vs HTML</h2>
+    <div class="image-panel">
+      <img src="comparison-contact-sheet.png" alt="Comparison contact sheet showing source, PPTX raster, HTML screenshot, and visual diffs">
+      <div class="caption">
+        Contact sheet: source, PPTX raster, HTML screenshot, PPTX diff, and HTML diff.
+        Red diff panels are expected for this dense example because the output is an
+        editable native redraw, not a screenshot clone.
+      </div>
+    </div>
+
+    <h2>Evidence Summary</h2>
+    <div class="grid">
+      <div class="card">
+        <h3>PPTX Package</h3>
+        <div class="metric">PASS</div>
+        <div class="small">Strict validation: 0 errors, 0 warnings.</div>
+      </div>
+      <div class="card">
+        <h3>Native Objects</h3>
+        <div class="metric">659</div>
+        <div class="small">242 text, 226 panels, 92 rules, 84 shapes, 14 icons.</div>
+      </div>
+      <div class="card">
+        <h3>Crop Coverage</h3>
+        <div class="metric">0%</div>
+        <div class="small">No full-slide source screenshot crop is used.</div>
+      </div>
+      <div class="card fail">
+        <h3>Strict Visual QA</h3>
+        <div class="metric">FAIL</div>
+        <div class="small">Documented limitation, not hidden.</div>
+      </div>
+    </div>
+
+    <h2>How To Interpret This Case</h2>
+    <table>
+      <tr>
+        <th>Good Signal</th>
+        <th>What It Means</th>
+      </tr>
+      <tr>
+        <td>Editable native object count</td>
+        <td>The deck was rebuilt with movable text boxes, shapes, panels, rules, and icons.</td>
+      </tr>
+      <tr>
+        <td>0% crop coverage</td>
+        <td>The source slide image was not placed as one full-slide picture.</td>
+      </tr>
+      <tr>
+        <td>Strict PPTX validation passed</td>
+        <td>The PowerPoint package structure is valid and should not require repair.</td>
+      </tr>
+      <tr>
+        <td>Visual QA failure disclosed</td>
+        <td>The example is not claiming pixel-perfect reproduction of distorted AI microtext and ornamental density.</td>
+      </tr>
+    </table>
+
+    <h2>Known Limits</h2>
+    <p>
+      The source contains AI-generated microtext and dense ornamental edge
+      texture. The reconstruction normalizes much of that into clean editable
+      PowerPoint objects, so strict pixel comparison reports large differences:
+      <code>pptx_vs_source pixel diff 0.2583</code>,
+      <code>SSIM 0.4304</code>, and <code>edge diff 0.1742</code>.
+    </p>
+  </main>
+
+  <footer>
+    <a href="../../">Back to pngtopptx</a>
+  </footer>
+</body>
+</html>

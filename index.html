@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>pngtopptx Codex SkillSet</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #08111f;
+      --panel: #0f1d30;
+      --line: #29445f;
+      --text: #eef5fb;
+      --muted: #a9bac9;
+      --cyan: #2ed3f2;
+      --green: #9edb5f;
+      --amber: #f5b73f;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: radial-gradient(circle at 25% 0%, #112642 0, #08111f 46%, #050914 100%);
+      color: var(--text);
+      font: 16px/1.5 Arial, "Segoe UI", sans-serif;
+    }
+    main { max-width: 1120px; margin: 0 auto; padding: 44px 24px 64px; }
+    h1 { margin: 0 0 10px; font-size: clamp(34px, 5vw, 58px); line-height: 1.04; letter-spacing: 0; }
+    h2 { margin: 34px 0 14px; font-size: 24px; }
+    p { color: var(--muted); max-width: 860px; }
+    a { color: var(--cyan); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .hero {
+      min-height: 56vh;
+      display: grid;
+      align-content: center;
+      border-bottom: 1px solid rgba(255,255,255,.12);
+    }
+    .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+    .button {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px 14px;
+      background: rgba(12, 30, 50, .75);
+      color: var(--text);
+      font-weight: 700;
+    }
+    .primary { border-color: var(--cyan); color: #03121c; background: var(--cyan); }
+    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(15,29,48,.78);
+      padding: 16px;
+    }
+    .metric { font-size: 28px; color: var(--green); font-weight: 800; }
+    code {
+      color: var(--amber);
+      background: rgba(255,255,255,.06);
+      padding: 2px 5px;
+      border-radius: 4px;
+    }
+    pre {
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #06101c;
+      padding: 14px;
+      color: #dbe9f5;
+    }
+    @media (max-width: 820px) {
+      .grid { grid-template-columns: 1fr; }
+      main { padding: 30px 18px 46px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="hero">
+      <h1>pngtopptx</h1>
+      <p>
+        A local Codex SkillSet for reconstructing slide screenshots and exported
+        PNGs into editable PowerPoint decks. It is designed for dense technical
+        slides with tables, callouts, panels, icons, and diagrams.
+      </p>
+      <div class="actions">
+        <a class="button primary" href="QUICKSTART.md">Quick Install</a>
+        <a class="button" href="examples/generated-cooling-loop/">View Example</a>
+        <a class="button" href="examples/generated-cooling-loop/editable-reconstruction.pptx">Download Example PPTX</a>
+      </div>
+    </section>
+
+    <h2>What To Try First</h2>
+    <div class="grid">
+      <div class="card">
+        <div class="metric">1</div>
+        <p>Download the repository ZIP, extract it, and open PowerShell in the folder.</p>
+      </div>
+      <div class="card">
+        <div class="metric">2</div>
+        <p>Run the recommended installer with backup and Codex agent templates.</p>
+      </div>
+      <div class="card">
+        <div class="metric">3</div>
+        <p>Restart Codex and ask it to use <code>$slide-editable-deck-orchestrator</code>.</p>
+      </div>
+    </div>
+
+    <h2>Recommended Install Command</h2>
+    <pre>powershell -ExecutionPolicy Bypass -File .\install.ps1 -BackupExisting -Force -InstallAgents</pre>
+
+    <h2>Public Validation Example</h2>
+    <p>
+      The dense cooling-loop example includes the source image, editable PPTX,
+      comparison contact sheet, visual QA summary, and a browser-readable report.
+      It is a success case for editable reconstruction and package validity, with
+      strict visual QA limitations documented honestly.
+    </p>
+  </main>
+</body>
+</html>

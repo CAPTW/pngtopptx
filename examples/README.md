@@ -9,6 +9,10 @@ normal generated-output hygiene.
 [`generated-cooling-loop/`](generated-cooling-loop/) is a synthetic 16:9 dense
 technical slide converted into an editable PPTX.
 
+Open [`generated-cooling-loop/index.html`](generated-cooling-loop/index.html)
+in a browser to visually inspect the source, comparison contact sheet, and
+validation notes without opening PowerPoint.
+
 Use it to inspect the intended success criterion:
 
 - the PPTX opens without package validation errors;

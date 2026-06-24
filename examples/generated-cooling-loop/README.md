@@ -15,11 +15,23 @@ pixel-perfect benchmark.
 - `editable-reconstruction.pptx` - editable PowerPoint reconstruction.
 - `comparison-contact-sheet.png` - source, PPTX raster, HTML render, and diff
   panels in one image.
+- `index.html` - browser-viewable visual report for this example.
 - `visual-qa-summary.md` - visual QA report from the companion QA Skill.
 - `reconstruction-slides.js` - deck-local slide reconstruction code used for
   the example.
 - `prompt.txt` - prompt used to create the synthetic source slide.
 - `object-summary.json` - compact evidence summary.
+
+## View In A Browser
+
+Open `index.html` directly in a browser, or use GitHub Pages if enabled:
+
+```text
+https://captw.github.io/pngtopptx/examples/generated-cooling-loop/
+```
+
+The page shows the source slide, the source/PPTX/HTML comparison contact sheet,
+success evidence, limitations, and direct links to the PPTX and QA files.
 
 ## What Passed
 

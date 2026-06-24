@@ -12,6 +12,31 @@ about what is editable and what is preserved as raster content.
 
 This repository is not an official OpenAI or Codex project.
 
+## Quick Install For Non-Developers
+
+You do not need Git to install this SkillSet.
+
+1. Click GitHub's green `Code` button and choose `Download ZIP`.
+2. Extract the ZIP file.
+3. Open PowerShell in the extracted folder.
+4. Run:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\install.ps1 -BackupExisting -Force -InstallAgents
+```
+
+Then verify and restart Codex:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\verify_install.ps1
+```
+
+Look for `Failures: 0`, then close and reopen Codex.
+
+For a step-by-step guide with screenshots-style instructions and troubleshooting,
+start with [QUICKSTART.md](QUICKSTART.md). For advanced install targets, see
+[INSTALL.md](INSTALL.md).
+
 ## What It Does
 
 - Converts source slide images into editable PPTX output.
@@ -28,11 +53,19 @@ A public dense-slide conversion example is included in
 [examples/generated-cooling-loop](examples/generated-cooling-loop/).
 
 It contains the synthetic source image, editable PPTX output, comparison contact
-sheet, reconstruction code, prompt, and QA summary. The example is intentionally
-documented as a success case with limitations: package validation and editability
-pass, while strict pixel visual QA reports the expected differences caused by
-AI microtext, ornamental density, font/rasterization differences, and native
-redrawing instead of screenshot embedding.
+sheet, browser-viewable HTML page, reconstruction code, prompt, and QA summary.
+If GitHub Pages is enabled for this repository, the visual example can be viewed
+as a webpage at:
+
+```text
+https://captw.github.io/pngtopptx/examples/generated-cooling-loop/
+```
+
+The example is intentionally documented as a success case with limitations:
+package validation and editability pass, while strict pixel visual QA reports
+the expected differences caused by AI microtext, ornamental density,
+font/rasterization differences, and native redrawing instead of screenshot
+embedding.
 
 ## Included Skills
 
@@ -68,22 +101,19 @@ Use $slide-image-dual-render to convert these slide images into editable PPTX an
 
 ## Install
 
-Install into the legacy Codex local skill path:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\install.ps1
-```
-
-Install while backing up an existing local skill with the same name:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\install.ps1 -BackupExisting -Force
-```
-
-Install agent templates as well:
+Recommended install command:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\install.ps1 -BackupExisting -Force -InstallAgents
+```
+
+This installs the Skills, backs up old copies, and installs optional Codex agent
+templates. Restart Codex after installation so the local Skill registry reloads.
+
+Minimal install without backups or agent templates:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\install.ps1
 ```
 
 Verify the install:
@@ -92,7 +122,12 @@ Verify the install:
 powershell -ExecutionPolicy Bypass -File .\verify_install.ps1
 ```
 
-Restart Codex after installation so the local skill registry reloads.
+Then ask Codex:
+
+```text
+Use $slide-editable-deck-orchestrator.
+Check that the pngtopptx editable PPTX SkillSet is available.
+```
 
 ## Typical Deck Project Flow
 
