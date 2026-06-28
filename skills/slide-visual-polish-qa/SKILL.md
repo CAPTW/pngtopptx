@@ -1,6 +1,6 @@
 ---
 name: slide-visual-polish-qa
-description: Companion visual QA for editable slide reconstruction workflows. Use after slide-image-dual-render has produced PPTX/HTML slide outputs and work artifacts when Codex needs to compare source slide images against rendered PPTX rasters and HTML screenshots, compute perceptual/pixel/edge differences, classify visual fidelity issues, and generate actionable polish fix plans without generating, repairing, or directly editing PPTX/HTML.
+description: Companion visual QA for editable slide reconstruction workflows. Use after slide-image-dual-render has produced PPTX/HTML slide outputs and work artifacts to compare source slide images against rendered PPTX rasters and HTML screenshots, compute perceptual/pixel/edge differences, classify visual fidelity issues, and generate actionable polish fix plans without generating, repairing, or directly editing PPTX/HTML.
 ---
 
 # Slide Visual Polish QA
@@ -95,15 +95,15 @@ read sequentially from physical/rendered slides 1..N. If needed, provide `--phys
 ```powershell
 cd C:\path\to\deck
 
-python "$env:USERPROFILE\.codex\skills\slide-visual-polish-qa\scripts\rasterize_pptx.py" --project . --pptx out\deck-editable.pptx --slides 12 --out-dir work
+python "$env:USERPROFILE\.pngtopptx\skills\slide-visual-polish-qa\scripts\rasterize_pptx.py" --project . --pptx out\deck-editable.pptx --slides 12 --out-dir work
 
-python "$env:USERPROFILE\.codex\skills\slide-visual-polish-qa\scripts\capture_html_screenshot.py" --project . --html out\deck-editable.html --slides 12 --out-dir work --width 1672 --height 941
+python "$env:USERPROFILE\.pngtopptx\skills\slide-visual-polish-qa\scripts\capture_html_screenshot.py" --project . --html out\deck-editable.html --slides 12 --out-dir work --width 1672 --height 941
 
-python "$env:USERPROFILE\.codex\skills\slide-visual-polish-qa\scripts\compare_slide_images.py" --project . --slides 12 --mode qa-polish --source-dir src --qa-dir work --out-summary out\visual_qa_summary.json
+python "$env:USERPROFILE\.pngtopptx\skills\slide-visual-polish-qa\scripts\compare_slide_images.py" --project . --slides 12 --mode qa-polish --source-dir src --qa-dir work --out-summary out\visual_qa_summary.json
 
-node "$env:USERPROFILE\.codex\skills\slide-visual-polish-qa\scripts\generate_visual_qa_summary.js" --project . --slides 12 --out-json out\visual_qa_summary.json --out-md out\visual_qa_summary.md
+node "$env:USERPROFILE\.pngtopptx\skills\slide-visual-polish-qa\scripts\generate_visual_qa_summary.js" --project . --slides 12 --out-json out\visual_qa_summary.json --out-md out\visual_qa_summary.md
 
-node "$env:USERPROFILE\.codex\skills\slide-visual-polish-qa\scripts\enforce_visual_qa.js" --project . --slides 12 --mode qa-polish --summary out\visual_qa_summary.json --require-pptx --require-html
+node "$env:USERPROFILE\.pngtopptx\skills\slide-visual-polish-qa\scripts\enforce_visual_qa.js" --project . --slides 12 --mode qa-polish --summary out\visual_qa_summary.json --require-pptx --require-html
 ```
 
 ## Wave Output Example
@@ -111,11 +111,11 @@ node "$env:USERPROFILE\.codex\skills\slide-visual-polish-qa\scripts\enforce_visu
 Use `--source-slides` when the PPTX/HTML contains only selected source slides:
 
 ```powershell
-python "$env:USERPROFILE\.codex\skills\slide-visual-polish-qa\scripts\rasterize_pptx.py" --project . --pptx out\deck-wave-polish-8-13.pptx --source-slides 8,10,11,12,13 --out-dir work
+python "$env:USERPROFILE\.pngtopptx\skills\slide-visual-polish-qa\scripts\rasterize_pptx.py" --project . --pptx out\deck-wave-polish-8-13.pptx --source-slides 8,10,11,12,13 --out-dir work
 
-python "$env:USERPROFILE\.codex\skills\slide-visual-polish-qa\scripts\capture_html_screenshot.py" --project . --html out\deck-wave-polish-8-13.html --source-slides 8,10,11,12,13 --out-dir work --width 1672 --height 941
+python "$env:USERPROFILE\.pngtopptx\skills\slide-visual-polish-qa\scripts\capture_html_screenshot.py" --project . --html out\deck-wave-polish-8-13.html --source-slides 8,10,11,12,13 --out-dir work --width 1672 --height 941
 
-python "$env:USERPROFILE\.codex\skills\slide-visual-polish-qa\scripts\compare_slide_images.py" --project . --slides 8,10,11,12,13 --mode qa-polish --source-dir src --qa-dir work --out-summary out\visual_qa_summary_wave1.json
+python "$env:USERPROFILE\.pngtopptx\skills\slide-visual-polish-qa\scripts\compare_slide_images.py" --project . --slides 8,10,11,12,13 --mode qa-polish --source-dir src --qa-dir work --out-summary out\visual_qa_summary_wave1.json
 ```
 
 This maps source slide 8 to physical/rendered slide 1, source slide 10 to physical/rendered slide 2,

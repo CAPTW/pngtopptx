@@ -1,6 +1,5 @@
 param(
   [string]$TargetRoot = "",
-  [switch]$UseAgentsSkillsPath,
   [switch]$DryRun,
   [switch]$BackupBeforeRemove
 )
@@ -16,11 +15,7 @@ $SkillNames = @(
 )
 
 if (-not $TargetRoot) {
-  if ($UseAgentsSkillsPath) {
-    $TargetRoot = Join-Path $env:USERPROFILE ".agents\skills"
-  } else {
-    $TargetRoot = Join-Path $env:USERPROFILE ".codex\skills"
-  }
+  $TargetRoot = Join-Path $env:USERPROFILE ".pngtopptx\skills"
 }
 
 function Write-Step($Message) {

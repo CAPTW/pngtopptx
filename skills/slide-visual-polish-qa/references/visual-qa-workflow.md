@@ -29,9 +29,9 @@ Use for batch polish cycles.
 Example wave mapping:
 
 ```powershell
-python "$env:USERPROFILE\.codex\skills\slide-visual-polish-qa\scripts\rasterize_pptx.py" --project . --pptx out\deck-wave-polish-8-13.pptx --source-slides 8,10,11,12,13 --out-dir work
+python "$env:USERPROFILE\.pngtopptx\skills\slide-visual-polish-qa\scripts\rasterize_pptx.py" --project . --pptx out\deck-wave-polish-8-13.pptx --source-slides 8,10,11,12,13 --out-dir work
 
-python "$env:USERPROFILE\.codex\skills\slide-visual-polish-qa\scripts\capture_html_screenshot.py" --project . --html out\deck-wave-polish-8-13.html --source-slides 8,10,11,12,13 --out-dir work --width 1672 --height 941
+python "$env:USERPROFILE\.pngtopptx\skills\slide-visual-polish-qa\scripts\capture_html_screenshot.py" --project . --html out\deck-wave-polish-8-13.html --source-slides 8,10,11,12,13 --out-dir work --width 1672 --height 941
 ```
 
 In this mode, source slide 13 maps to physical/rendered slide 5, not physical slide 13. Legacy

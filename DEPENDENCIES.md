@@ -1,33 +1,17 @@
 # Dependencies
 
-## Required
+Required:
 
-- Windows
-- Codex Desktop/App or CLI with local Skill support
-- Node.js
+- Windows PowerShell
+- Node.js 20+
 - Python 3.10+
-- PowerShell
+- npm packages used by deck projects: `pptxgenjs`, `sharp`, `react`,
+  `react-dom`, `react-icons`
 
-## Recommended
+Recommended for full QA:
 
-- Microsoft PowerPoint for PPTX open/raster diagnostics.
-- Chrome or Edge for HTML screenshot capture.
-- Python packages:
-  - `pillow`
-  - `numpy`
-  - `opencv-python`
-  - `scikit-image`
+- Microsoft PowerPoint or LibreOffice
+- Chrome or Edge
+- Python packages: Pillow, NumPy, OpenCV, scikit-image
 
-## Optional
-
-- LibreOffice for diagnostic rasterization only.
-- Tesseract OCR and `pytesseract` for OCR evidence.
-
-## Fonts
-
-Font files are not bundled. Use fonts already licensed and installed on the target machine. The rendering Skills document and enforce font fallback behavior where needed for QA parity.
-
-## Package Contents
-
-This package intentionally does not include `node_modules`. Install project-level Node dependencies in deck projects as required by `slide-image-dual-render`.
-
+Install runtime packages inside each deck project, not inside the toolkit repo.

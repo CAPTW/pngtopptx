@@ -80,13 +80,13 @@ Process one slide at a time. Keep each slide isolated in its own `work/slideXX/`
 1. Generate candidate regions:
 
 ```powershell
-python "$env:USERPROFILE\.codex\skills\slide-text-layer-inpaint\scripts\detect_text_regions.py" `
+python "$env:USERPROFILE\.pngtopptx\skills\slide-text-layer-inpaint\scripts\detect_text_regions.py" `
   --image src\slide01.png `
   --slide-id slide01 `
   --out work\slide01\text_regions.json
 ```
 
-2. Resolve `text_regions.json` manually or with a mapper agent:
+2. Resolve `text_regions.json` manually or with a mapper reviewer:
 
 - Correct every semantic text string in `correctedText`.
 - Keep OCR text in `evidence.ocrText`.
@@ -97,7 +97,7 @@ python "$env:USERPROFILE\.codex\skills\slide-text-layer-inpaint\scripts\detect_t
    text edges and modest shadow/glow residue without expanding into neighboring content:
 
 ```powershell
-python "$env:USERPROFILE\.codex\skills\slide-text-layer-inpaint\scripts\make_text_masks.py" `
+python "$env:USERPROFILE\.pngtopptx\skills\slide-text-layer-inpaint\scripts\make_text_masks.py" `
   --image src\slide01.png `
   --regions work\slide01\text_regions.json `
   --out-dir work\slide01 `
@@ -112,7 +112,7 @@ python "$env:USERPROFILE\.codex\skills\slide-text-layer-inpaint\scripts\make_tex
 4. Classify the background under each text region:
 
 ```powershell
-python "$env:USERPROFILE\.codex\skills\slide-text-layer-inpaint\scripts\classify_background_regions.py" `
+python "$env:USERPROFILE\.pngtopptx\skills\slide-text-layer-inpaint\scripts\classify_background_regions.py" `
   --image src\slide01.png `
   --regions work\slide01\text_regions.json `
   --out work\slide01\background_regions.json
@@ -122,7 +122,7 @@ python "$env:USERPROFILE\.codex\skills\slide-text-layer-inpaint\scripts\classify
    and reserves inpainting for gradient or photo/texture regions:
 
 ```powershell
-python "$env:USERPROFILE\.codex\skills\slide-text-layer-inpaint\scripts\repair_text_backgrounds.py" `
+python "$env:USERPROFILE\.pngtopptx\skills\slide-text-layer-inpaint\scripts\repair_text_backgrounds.py" `
   --image src\slide01.png `
   --regions work\slide01\text_regions.json `
   --background-regions work\slide01\background_regions.json `
@@ -136,7 +136,7 @@ The older generic inpainting command remains available for controlled texture/gr
 cases, but it is not the preferred production cleanup path:
 
 ```powershell
-python "$env:USERPROFILE\.codex\skills\slide-text-layer-inpaint\scripts\inpaint_text_regions.py" `
+python "$env:USERPROFILE\.pngtopptx\skills\slide-text-layer-inpaint\scripts\inpaint_text_regions.py" `
   --image src\slide01.png `
   --regions work\slide01\text_regions.json `
   --mask work\slide01\inpaint_mask.png `
@@ -148,7 +148,7 @@ python "$env:USERPROFILE\.codex\skills\slide-text-layer-inpaint\scripts\inpaint_
 6. Detect residual text ghosts:
 
 ```powershell
-python "$env:USERPROFILE\.codex\skills\slide-text-layer-inpaint\scripts\detect_residual_text.py" `
+python "$env:USERPROFILE\.pngtopptx\skills\slide-text-layer-inpaint\scripts\detect_residual_text.py" `
   --before src\slide01.png `
   --after work\slide01\clean_background.png `
   --regions work\slide01\text_regions.json `
@@ -160,7 +160,7 @@ python "$env:USERPROFILE\.codex\skills\slide-text-layer-inpaint\scripts\detect_r
 7. Run final strict enforcement:
 
 ```powershell
-node "$env:USERPROFILE\.codex\skills\slide-text-layer-inpaint\scripts\enforce_text_layer.js" `
+node "$env:USERPROFILE\.pngtopptx\skills\slide-text-layer-inpaint\scripts\enforce_text_layer.js" `
   --slide work\slide01 `
   --image src\slide01.png `
   --strict `
@@ -187,7 +187,7 @@ crop-heavy preservation or renderer bypasses.
 Strict handoff validation should use:
 
 ```powershell
-node "$env:USERPROFILE\.codex\skills\slide-text-layer-inpaint\scripts\enforce_text_layer.js" `
+node "$env:USERPROFILE\.pngtopptx\skills\slide-text-layer-inpaint\scripts\enforce_text_layer.js" `
   --slide work\slide01 `
   --image src\slide01.png `
   --strict `

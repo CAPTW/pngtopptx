@@ -1,7 +1,5 @@
 param(
   [string]$TargetRoot = "",
-  [switch]$UseAgentsSkillsPath,
-  [switch]$InstallAgents,
   [switch]$DryRun,
   [switch]$Force,
   [switch]$BackupExisting
@@ -19,11 +17,7 @@ $SkillNames = @(
 )
 
 if (-not $TargetRoot) {
-  if ($UseAgentsSkillsPath) {
-    $TargetRoot = Join-Path $env:USERPROFILE ".agents\skills"
-  } else {
-    $TargetRoot = Join-Path $env:USERPROFILE ".codex\skills"
-  }
+  $TargetRoot = Join-Path $env:USERPROFILE ".pngtopptx\skills"
 }
 
 function Write-Step($Message) {
@@ -76,31 +70,9 @@ foreach ($name in $SkillNames) {
   Install-Directory -Source (Join-Path $PackageRoot "skills\$name") -Destination (Join-Path $TargetRoot $name)
 }
 
-if ($InstallAgents) {
-  $agentSource = Join-Path $PackageRoot "agents\codex-agents"
-  $agentTarget = Join-Path $env:USERPROFILE ".codex\agents"
-  if (Test-Path -LiteralPath $agentSource) {
-    if (-not $DryRun) {
-      New-Item -ItemType Directory -Path $agentTarget -Force | Out-Null
-    }
-    Get-ChildItem -LiteralPath $agentSource -Filter "*.toml" -File | ForEach-Object {
-      $dest = Join-Path $agentTarget $_.Name
-      if ((Test-Path -LiteralPath $dest) -and -not $Force) {
-        Write-Step "Skipping existing agent template $dest; use -Force to overwrite"
-      } elseif ($DryRun) {
-        Write-Step "Would copy agent $($_.FullName) -> $dest"
-      } else {
-        Copy-Item -LiteralPath $_.FullName -Destination $dest -Force:$Force
-        Write-Step "Installed agent template $dest"
-      }
-    }
-  }
-}
-
 Write-Step "Install complete."
 Write-Host ""
 Write-Host "Next steps:"
-Write-Host "1. Restart Codex Desktop/App."
-Write-Host "2. Verify with: powershell -ExecutionPolicy Bypass -File .\verify_install.ps1"
-Write-Host "3. Invoke with: Use `$slide-editable-deck-orchestrator."
+Write-Host "1. Verify with: powershell -ExecutionPolicy Bypass -File .\verify_install.ps1"
+Write-Host "2. Run the renderer scripts from a separate deck project."
 

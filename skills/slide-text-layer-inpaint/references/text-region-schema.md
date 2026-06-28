@@ -77,7 +77,7 @@ Required fields:
 - `id`: unique stable id within the slide.
 - `class`: one of the allowed classes below.
 - `bbox`: source-pixel box with numeric `x`, `y`, `w`, and `h`.
-- `source`: `manual`, `cv_candidate`, `ocr_candidate`, `agent_review`, or `imported`.
+- `source`: `manual`, `cv_candidate`, `ocr_candidate`, `manual_review`, or `imported`.
 - `confidence`: number from 0 to 1 describing confidence in the region boundary and class.
 
 Optional fields:

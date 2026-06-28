@@ -1,7 +1,7 @@
 # Examples
 
 This directory contains small public validation cases for the `pngtopptx`
-Codex SkillSet. These are intentionally committed exceptions to the repository's
+slide reconstruction toolkit. These are intentionally committed exceptions to the repository's
 normal generated-output hygiene.
 
 ## Generated Cooling Loop

@@ -7,7 +7,7 @@ The five phases from SKILL.md, expanded with the decisions that matter.
 deck/
 ├── src/        slide1.png … slideN.png   (renamed copies of the source images)
 ├── assets/     bg.png, icons/, <crop>.png, manifest.json   (generated; = DECK_ASSETS)
-├── work/       slideXX/ worker artifacts for Codex Desktop sub-agent fan-out
+├── work/       slideXX/ worker artifacts for the local environment parallel worker fan-out
 ├── lib/        kit.js, atoms_pptx.js, atoms_html.js, slides.js
 ├── build.js, make_bg.py, make_icons.js, make_crops.py
 └── out/        deck.pptx, deck.html
@@ -25,7 +25,7 @@ $env:DECK_PROFILE="$PWD\styles\clinical-dark.json"
 $env:DECK_ASSETS="$PWD\assets"
 $env:DECK_PXW="1672"
 $env:DECK_PXH="941"
-node "$env:USERPROFILE\.codex\skills\slide-image-dual-render\scripts\slide_pipeline.js" --target both --pptx-out out\deck.pptx --html-out out\deck.html
+node "$env:USERPROFILE\.pngtopptx\skills\slide-image-dual-render\scripts\slide_pipeline.js" --target both --pptx-out out\deck.pptx --html-out out\deck.html
 ```
 
 Deck-local copied layout:
@@ -46,7 +46,7 @@ node scripts/final_gate.js --target both --pptx out/deck.pptx --html out/deck.ht
 For Skill-installed layout, run the gate as:
 
 ```powershell
-node "$env:USERPROFILE\.codex\skills\slide-image-dual-render\scripts\final_gate.js" --target both --pptx out\deck.pptx --html out\deck.html
+node "$env:USERPROFILE\.pngtopptx\skills\slide-image-dual-render\scripts\final_gate.js" --target both --pptx out\deck.pptx --html out\deck.html
 ```
 
 If you use the root-copied setup from older versions (`cp -r scripts/* deck/`), drop the `scripts/`
@@ -55,8 +55,8 @@ prefix for deck-local hardlock commands.
 Do not bypass the renderer. A PPTX made directly with `pptxgenjs`, `python-pptx`, LibreOffice
 HTML/PDF-to-PPTX conversion, or full-slide screenshots is invalid even if it looks correct.
 
-## Codex Desktop sub-agent mode
-For parallel reconstruction, read `references/codex-subagents.md` before dispatching workers. The
+## the local environment parallel worker mode
+For parallel reconstruction, read `` before dispatching workers. The
 unit of parallel work is one source slide image in one fresh context. Workers write only to their own
 `work/slideXX/` folders; they do not edit `lib/slides.js`, `make_crops.py`, `build.js`, or
 `styles/*.json`.
@@ -73,7 +73,7 @@ The expected worker outputs are:
 After workers finish, the main thread or `slide_render_integrator` runs:
 
 ```bash
-node scripts/validate_agent_work.js --work work
+node scripts/validate_parallel_work.js --work work
 node scripts/merge_fragments.js --work work --out lib/slides.js --backup
 CROP_PLAN_DIR=work python make_crops.py
 TARGET=both PPTX_OUT=out/deck.pptx HTML_OUT=out/deck.html node build.js
@@ -86,7 +86,7 @@ If you followed the original setup that copies `scripts/*` into the deck root, u
 without the `scripts/` prefix:
 
 ```bash
-node validate_agent_work.js --work work
+node validate_parallel_work.js --work work
 node merge_fragments.js --work work --out lib/slides.js --backup
 TARGET=both SLIDES=1,2,3 node build.js
 ```
@@ -116,7 +116,7 @@ The step that keeps quality from fluctuating across idioms. Follow `scripts/clas
 4. **Verify**: `node preview.js styles/<id>.json out/<id>.html`, rasterize, eyeball. Then
    `export DECK_PROFILE="$PWD/styles/<id>.json"` for the rest of the pipeline.
 
-In sub-agent mode, write the profile decision and extracted specifics to
+In parallel worker mode, write the profile decision and extracted specifics to
 `work/slideXX/profile_override.json`. Do not change shared `styles/*.json` from a worker. Promotion
 to a new shared profile is an integrator/main-thread decision.
 
@@ -155,7 +155,7 @@ backdrop blends in (use `LRTB` for free-floating renders; use e.g. `LB` for a ph
 to a corner). Running it writes each `assets/<name>.png` plus `assets/manifest.json`
 (box coords) so `crop(s,'name')` can place it exactly.
 
-In sub-agent mode, workers write crop requests to `work/slideXX/crop_plan.json` instead of editing
+In parallel worker mode, workers write crop requests to `work/slideXX/crop_plan.json` instead of editing
 `make_crops.py`. The integrator merges them into `work/crop_plan.integrated.json`, then crop
 generation uses:
 
@@ -191,15 +191,15 @@ duplication is gone.
 ## Phase 2 — Authoring
 - Copy `lib/slides.template.js` → `lib/slides.js`. Replace bodies; keep the `s1..sN` export
   contract. There is **no slide-count cap** — `build.js` discovers whatever you export.
-- In sub-agent mode, each worker writes `work/slideXX/sN.fragment.js` and never writes
+- In parallel worker mode, each worker writes `work/slideXX/sN.fragment.js` and never writes
   `lib/slides.js`. The fragment should define exactly one `function sN(s) { ... }`, rely on the
-  shared kit prelude added by `integrate_subagent_work.js`, and avoid backend checks.
-- The integrator merges fragments with `node integrate_subagent_work.js`. It writes
+  shared kit prelude added by `integrate_parallel_work.js`, and avoid backend checks.
+- The integrator merges fragments with `node integrate_parallel_work.js`. It writes
   `lib/slides.js`, `work/crop_plan.integrated.json`, and `work/integration_report.md`.
 - The preferred explicit path is:
-  `node scripts/validate_agent_work.js --work work`,
+  `node scripts/validate_parallel_work.js --work work`,
   `node scripts/merge_fragments.js --work work --out lib/slides.js --backup`, then
-  `CROP_PLAN_DIR=work python make_crops.py`. `integrate_subagent_work.js` remains a compatibility
+  `CROP_PLAN_DIR=work python make_crops.py`. `integrate_parallel_work.js` remains a compatibility
   shortcut for older instructions.
 - Transcribe **1:1**. Match the source's wording, ordering, and structure exactly
   ("보이는 그대로"). Faithful reproduction **overrides** generic "keep slides minimal / don't
@@ -246,7 +246,7 @@ the crop), a subtitle grazing the panels (raise it a few px). Re-render only the
 slides, re-view, repeat until clean. Build a small contact-sheet (montage of all slides) for
 a final holistic pass.
 
-In sub-agent mode, `slide_qa_gate` writes the verdict to `work/slideXX/qa_report.md`. The report
+In parallel worker mode, `slide_qa_gate` writes the verdict to `work/slideXX/qa_report.md`. The report
 must point to concrete edits in `sN.fragment.js` or `crop_plan.json`; broad restyling belongs in the
 integrator only when the source-vs-render comparison proves it.
 
@@ -272,9 +272,9 @@ Skill-installed layout:
 ```powershell
 cd C:\path\to\deck
 $env:SLIDE_PIPELINE_STRICT="1"
-node "$env:USERPROFILE\.codex\skills\slide-image-dual-render\scripts\install_hardlock.js" --project .
-node "$env:USERPROFILE\.codex\skills\slide-image-dual-render\scripts\slide_pipeline.js" --project . --target both --pptx-out out\deck.pptx --html-out out\deck.html
-node "$env:USERPROFILE\.codex\skills\slide-image-dual-render\scripts\final_gate.js" --project . --target both --pptx out\deck.pptx --html out\deck.html
+node "$env:USERPROFILE\.pngtopptx\skills\slide-image-dual-render\scripts\install_hardlock.js" --project .
+node "$env:USERPROFILE\.pngtopptx\skills\slide-image-dual-render\scripts\slide_pipeline.js" --project . --target both --pptx-out out\deck.pptx --html-out out\deck.html
+node "$env:USERPROFILE\.pngtopptx\skills\slide-image-dual-render\scripts\final_gate.js" --project . --target both --pptx out\deck.pptx --html out\deck.html
 ```
 
 Deck-local copied layout:
@@ -321,8 +321,8 @@ $env:DECK_ASSETS="$PWD\assets"
 $env:DECK_PXW="1672"
 $env:DECK_PXH="941"
 
-node "$env:USERPROFILE\.codex\skills\slide-image-dual-render\scripts\slide_pipeline.js" --project . --slides 1,2,3 --target both --crop-plan work\crop_plan.json --node-path .\node_modules --pptx-out out\deck.pptx --html-out out\deck.html
-node "$env:USERPROFILE\.codex\skills\slide-image-dual-render\scripts\final_gate.js" --project . --target both --pptx out\deck.pptx --html out\deck.html
+node "$env:USERPROFILE\.pngtopptx\skills\slide-image-dual-render\scripts\slide_pipeline.js" --project . --slides 1,2,3 --target both --crop-plan work\crop_plan.json --node-path .\node_modules --pptx-out out\deck.pptx --html-out out\deck.html
+node "$env:USERPROFILE\.pngtopptx\skills\slide-image-dual-render\scripts\final_gate.js" --project . --target both --pptx out\deck.pptx --html out\deck.html
 ```
 
 Recommended deck-local copied production command:
@@ -367,8 +367,8 @@ $env:DECK_PROFILE="$PWD\styles\clinical-dark.json"
 $env:DECK_ASSETS="$PWD\assets"
 $env:DECK_PXW="1672"
 $env:DECK_PXH="941"
-node "$env:USERPROFILE\.codex\skills\slide-image-dual-render\scripts\slide_pipeline.js" --project . --slides 1,2,3,4,5 --quality reconstruction --require-qa --require-reconstruction --crop-plan work\crop_plan.json --node-path .\node_modules --target both --pptx-out out\deck-wave1.pptx --html-out out\deck-wave1.html
-node "$env:USERPROFILE\.codex\skills\slide-image-dual-render\scripts\final_gate.js" --project . --slides 1,2,3,4,5 --quality reconstruction --require-qa --require-reconstruction --target both --pptx out\deck-wave1.pptx --html out\deck-wave1.html
+node "$env:USERPROFILE\.pngtopptx\skills\slide-image-dual-render\scripts\slide_pipeline.js" --project . --slides 1,2,3,4,5 --quality reconstruction --require-qa --require-reconstruction --crop-plan work\crop_plan.json --node-path .\node_modules --target both --pptx-out out\deck-wave1.pptx --html-out out\deck-wave1.html
+node "$env:USERPROFILE\.pngtopptx\skills\slide-image-dual-render\scripts\final_gate.js" --project . --slides 1,2,3,4,5 --quality reconstruction --require-qa --require-reconstruction --target both --pptx out\deck-wave1.pptx --html out\deck-wave1.html
 ```
 
 Repeat waves for `6,7,8,9,10`, `11,12,13,14,15`, and `16,17,18,19,20`. Only after all waves pass, build the combined deck with `--allow-large-batch` and run `final_gate.js` again.
@@ -376,8 +376,8 @@ Repeat waves for `6,7,8,9,10`, `11,12,13,14,15`, and `16,17,18,19,20`. Only afte
 New validators:
 
 ```powershell
-node "$env:USERPROFILE\.codex\skills\slide-image-dual-render\scripts\enforce_reconstruction.js" --project . --slides 1,2,3,4,5 --quality reconstruction --trace out\render_trace.json
-node "$env:USERPROFILE\.codex\skills\slide-image-dual-render\scripts\enforce_qa.js" --project . --slides 1,2,3,4,5
+node "$env:USERPROFILE\.pngtopptx\skills\slide-image-dual-render\scripts\enforce_reconstruction.js" --project . --slides 1,2,3,4,5 --quality reconstruction --trace out\render_trace.json
+node "$env:USERPROFILE\.pngtopptx\skills\slide-image-dual-render\scripts\enforce_qa.js" --project . --slides 1,2,3,4,5
 ```
 
 ## Objective Evidence Reconstruction Hardlock
@@ -411,7 +411,7 @@ Production PPTX delivery is invalid if Microsoft PowerPoint would require repair
 For reconstruction-mode outputs where the target includes PPTX, `final_gate.js` requires strict PPTX package validation by default. You can also request it explicitly:
 
 ```powershell
-node "$env:USERPROFILE\.codex\skills\slide-image-dual-render\scripts\final_gate.js" --project . --slides 6 --quality reconstruction --require-qa --require-reconstruction --require-pptx-openable --target both --pptx out\deck-slide6.pptx --html out\deck-slide6.html
+node "$env:USERPROFILE\.pngtopptx\skills\slide-image-dual-render\scripts\final_gate.js" --project . --slides 6 --quality reconstruction --require-qa --require-reconstruction --require-pptx-openable --target both --pptx out\deck-slide6.pptx --html out\deck-slide6.html
 ```
 
 The gate runs `scripts/validate_pptx_package.py --strict`, checks ZIP/package structure, XML well-formedness, relationships, content types, numeric slide geometry, and referenced media. A PowerPoint "repair required" result means the deliverable fails and must be fixed at source, then re-rendered through `slide_pipeline.js -> build.js -> final_gate.js`.

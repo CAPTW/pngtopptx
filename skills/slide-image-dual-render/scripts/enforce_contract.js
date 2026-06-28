@@ -16,7 +16,7 @@ function usage() {
 
 Usage:
   node scripts/enforce_contract.js --phase preflight|postbuild|final [options]
-  node C:\\Users\\USER\\.codex\\skills\\slide-image-dual-render\\scripts\\enforce_contract.js --project . --phase preflight
+  node C:\\Users\\USER\\.pngtopptx\\skills\\slide-image-dual-render\\scripts\\enforce_contract.js --project . --phase preflight
 
 Options:
   --project <path>      Deck project root. Defaults to current working directory.
@@ -68,7 +68,7 @@ function isInside(root, candidate) {
 
 function looksLikeInstalledSkillRoot(p) {
   const n = path.resolve(p).replace(/\\/g, '/').toLowerCase();
-  return n.endsWith('/.codex/skills/slide-image-dual-render');
+  return n.endsWith('/.pngtopptx/skills/slide-image-dual-render');
 }
 
 function fileExists(file) {
@@ -248,7 +248,7 @@ function shouldScanFile(projectRoot, file) {
   if (!rel || rel.startsWith('..')) return false;
   if (rel === 'SKILL.md') return false;
   if (rel.startsWith('references/')) return false;
-  if (rel.startsWith('assets/codex-hardlock/')) return false;
+  if (rel.startsWith('assets/validation/')) return false;
   if (rel.startsWith('out/') || rel.startsWith('assets/') || rel.startsWith('work/') || rel.includes('/node_modules/')) return false;
   if (rel.endsWith('.md')) return false;
   const base = path.basename(rel);

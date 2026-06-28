@@ -15,7 +15,7 @@
 //      s.img(require('path').join(K.ASSET,'my_crop.png'), x,y,w,h)
 //  or, if it is registered in manifest.json, with K.crop(s,'my_crop').
 //
-//  CODEX SUB-AGENT CONTRACT:
+//  PARALLEL WORKER CONTRACT:
 //    - parallel workers write work/slideXX/sN.fragment.js, not this shared file.
 //    - a fragment should define exactly one function sN(s) using these same
 //      helpers and source-pixel coordinates.

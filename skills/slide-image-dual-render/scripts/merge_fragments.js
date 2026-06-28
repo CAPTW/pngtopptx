@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 function usage() {
-  console.log(`Merge slide-image-dual-render sub-agent fragments into lib/slides.js.
+  console.log(`Merge slide-image-dual-render parallel worker fragments into lib/slides.js.
 
 Usage:
   node scripts/merge_fragments.js [options]

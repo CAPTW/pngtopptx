@@ -19,7 +19,7 @@ function usage() {
 
 Usage:
   node scripts/slide_pipeline.js [options]
-  node C:\\Users\\USER\\.codex\\skills\\slide-image-dual-render\\scripts\\slide_pipeline.js --project . [options]
+  node C:\\Users\\USER\\.pngtopptx\\skills\\slide-image-dual-render\\scripts\\slide_pipeline.js --project . [options]
 
 Options:
   --project <path>      Deck project root. Defaults to current working directory.
@@ -122,7 +122,7 @@ function isInside(root, candidate) {
 
 function looksLikeInstalledSkillRoot(p) {
   const n = path.resolve(p).replace(/\\/g, '/').toLowerCase();
-  return n.endsWith('/.codex/skills/slide-image-dual-render');
+  return n.endsWith('/.pngtopptx/skills/slide-image-dual-render');
 }
 
 function ensureDir(dir) {
@@ -273,7 +273,7 @@ function dependencyError(info, layout) {
     `Fix for Skill-installed layout:\n` +
     `  cd ${layout.projectRoot}\n` +
     `  npm i pptxgenjs sharp react react-dom react-icons\n` +
-    `  node "%USERPROFILE%\\.codex\\skills\\slide-image-dual-render\\scripts\\slide_pipeline.js" --project . --node-path .\\node_modules ...\n\n` +
+    `  node "%USERPROFILE%\\.pngtopptx\\skills\\slide-image-dual-render\\scripts\\slide_pipeline.js" --project . --node-path .\\node_modules ...\n\n` +
     `Fix for deck-local copied layout:\n` +
     `  cd ${layout.projectRoot}\n` +
     `  npm i pptxgenjs sharp react react-dom react-icons\n` +

@@ -1,7 +1,7 @@
 # Generated Cooling Loop Success Case
 
 This example demonstrates a dense synthetic 16:9 slide converted into an
-editable PowerPoint deck with the `pngtopptx` SkillSet.
+editable PowerPoint deck with the `pngtopptx` toolkit.
 
 The source image is intentionally busy: it contains a title, four major zones,
 a cooling-loop schematic, a rack heatmap, KPI chips, a risk table, a response

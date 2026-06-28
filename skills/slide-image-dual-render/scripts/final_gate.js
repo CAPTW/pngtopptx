@@ -18,7 +18,7 @@ function usage() {
 
 Usage:
   node scripts/final_gate.js --target pptx|html|both --pptx out/deck.pptx --html out/deck.html [options]
-  node C:\\Users\\USER\\.codex\\skills\\slide-image-dual-render\\scripts\\final_gate.js --project . --target both --pptx out\\deck.pptx --html out\\deck.html
+  node C:\\Users\\USER\\.pngtopptx\\skills\\slide-image-dual-render\\scripts\\final_gate.js --project . --target both --pptx out\\deck.pptx --html out\\deck.html
 
 Options:
   --project <path>      Deck project root. Defaults to current working directory.
@@ -76,7 +76,7 @@ function isInside(root, candidate) {
 
 function looksLikeInstalledSkillRoot(p) {
   const n = path.resolve(p).replace(/\\/g, '/').toLowerCase();
-  return n.endsWith('/.codex/skills/slide-image-dual-render');
+  return n.endsWith('/.pngtopptx/skills/slide-image-dual-render');
 }
 
 function fileExists(file) {

@@ -3,7 +3,7 @@
 How to rasterize the outputs to inspect them, the hazards, and the Python snippets for
 measuring coordinates off the source images.
 
-## Codex sub-agent QA gate
+## parallel worker QA gate
 
 Gate one slide at a time. A `slide_qa_gate` compares `src/slideN.png` against the rendered PPTX/HTML
 image for slide N, then writes `work/slideXX/qa_report.md` with targeted fixes. The gate should name
@@ -106,7 +106,7 @@ Preferred diagnostic HTML capture is the `slide-visual-polish-qa` capture script
 Example:
 
 ```powershell
-python "$env:USERPROFILE\.codex\skills\slide-visual-polish-qa\scripts\capture_html_screenshot.py" `
+python "$env:USERPROFILE\.pngtopptx\skills\slide-visual-polish-qa\scripts\capture_html_screenshot.py" `
   --project . --html out\deck.html --slides 1,5,12 --out-dir work --width 1672 --height 941
 ```
 

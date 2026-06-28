@@ -9,7 +9,7 @@ Per job you only edit the CROPS table below. Paths are env-configurable:
   DECK_ASSETS=/path/to/assets        (crops + manifest.json are written here)
   python make_crops.py
 
-Hard-Locked Workflow Mode passes an explicit crop plan through slide_pipeline.js --crop-plan <path>, which sets CROP_PLAN for this script. If --crop-plan is omitted, the documented production default is work/crop_plan.json.\n\nCodex sub-agent jobs should not edit this shared file. Instead, write per-slide\nplans to work/slideXX/crop_plan.json, run integrate_subagent_work.js, then run:\n  CROP_PLAN=work/crop_plan.integrated.json python make_crops.py
+Hard-Locked Workflow Mode passes an explicit crop plan through slide_pipeline.js --crop-plan <path>, which sets CROP_PLAN for this script. If --crop-plan is omitted, the documented production default is work/crop_plan.json.\n\nparallel worker jobs should not edit this shared file. Instead, write per-slide\nplans to work/slideXX/crop_plan.json, run integrate_parallel_work.js, then run:\n  CROP_PLAN=work/crop_plan.integrated.json python make_crops.py
 
 Rule of thumb on WHAT to crop: rebuild everything you can as editable objects
 (titles, panels, tables, bullets, icons, chevrons, callouts). Only crop what is

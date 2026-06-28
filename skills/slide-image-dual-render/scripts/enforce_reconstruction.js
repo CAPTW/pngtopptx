@@ -147,7 +147,7 @@ function validateReceipt(projectRoot, slide, receipt, errors) {
   if (!receipt) return;
   const id = String(slide).padStart(2, '0');
   if (receipt.slide !== slide) errors.push(`slide ${slide}: worker_receipt.slide is ${receipt.slide}`);
-  if (receipt.agent !== 'slide_reconstruct_worker') errors.push(`slide ${slide}: worker_receipt.agent must be slide_reconstruct_worker`);
+  if (receipt.worker !== 'slide_reconstruct_worker') errors.push(`slide ${slide}: worker_receipt.worker must be slide_reconstruct_worker`);
   if (receipt.status !== 'completed') errors.push(`slide ${slide}: worker_receipt.status must be completed`);
   if (receipt.sharedFilesEdited !== false) errors.push(`slide ${slide}: worker_receipt.sharedFilesEdited must be false`);
   if (!Array.isArray(receipt.artifacts)) errors.push(`slide ${slide}: worker_receipt.artifacts must be an array`);

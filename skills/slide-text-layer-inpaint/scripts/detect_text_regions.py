@@ -2,7 +2,7 @@
 """Generate text-like candidate regions for slide screenshots.
 
 This script is a candidate generator, not a truth source. OCR text and detector boxes are
-recorded as evidence only. Humans or mapper agents must resolve classes and corrected text
+recorded as evidence only. Reviewers or mapper tools must resolve classes and corrected text
 before mask generation and inpainting are considered production-ready.
 """
 

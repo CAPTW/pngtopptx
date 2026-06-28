@@ -3,7 +3,7 @@
 This is the step that kills style-variance: convert open-ended style **authoring** into a
 constrained **classification + frozen-profile lookup**. Do this per image, in its own context.
 
-In Codex Desktop sub-agent mode, the mapper writes its result to
+In the local environment parallel worker mode, the mapper writes its result to
 `work/slideXX/profile_override.json` and optional measured evidence to `work/slideXX/measurements.json`.
 It must not edit shared `styles/*.json`; adding or changing a shared profile is an integrator or
 main-thread decision.

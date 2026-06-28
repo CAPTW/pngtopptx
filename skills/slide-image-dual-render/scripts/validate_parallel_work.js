@@ -3,10 +3,10 @@ const fs = require('fs');
 const path = require('path');
 
 function usage() {
-  console.log(`Validate slide-image-dual-render sub-agent work directories.
+  console.log(`Validate slide-image-dual-render parallel worker work directories.
 
 Usage:
-  node scripts/validate_agent_work.js [options]
+  node scripts/validate_parallel_work.js [options]
 
 Options:
   --work <path>      Work directory containing slideXX folders (default: work)
@@ -167,6 +167,6 @@ function main() {
 try {
   main();
 } catch (err) {
-  console.error(`validate_agent_work: ${err.message}`);
+  console.error(`validate_parallel_work: ${err.message}`);
   process.exit(1);
 }

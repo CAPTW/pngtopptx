@@ -93,7 +93,7 @@ The orchestrator writes `work/orchestration_state.json`:
 
 7. Generate repair prompts.
    - Use `generate_repair_prompt.js`.
-   - Prompts must tell the repair agent not to modify Skill files or loosen thresholds.
+   - Prompts must tell the repair step not to modify Skill files or loosen thresholds.
 
 8. Execute repair waves with `slide-image-dual-render`.
    - Apply deck reconstruction fixes only.

@@ -16,11 +16,11 @@ $SkillNames = @(
 )
 
 $Version = "0.1.0"
-if (-not $SourceSkillsRoot) { $SourceSkillsRoot = Join-Path $env:USERPROFILE ".codex\skills" }
+if (-not $SourceSkillsRoot) { $SourceSkillsRoot = Join-Path $env:USERPROFILE ".pngtopptx\skills" }
 if (-not $PackageRoot) { $PackageRoot = $PSScriptRoot }
 $SourceSkillsRoot = (Resolve-Path -LiteralPath $SourceSkillsRoot).Path
 $PackageRoot = (Resolve-Path -LiteralPath $PackageRoot).Path
-if (-not $ZipPath) { $ZipPath = Join-Path (Split-Path -Parent $PackageRoot) "editable-pptx-skillset-v$Version.zip" }
+if (-not $ZipPath) { $ZipPath = Join-Path (Split-Path -Parent $PackageRoot) "pngtopptx-toolkit-v$Version.zip" }
 else { $ZipPath = [System.IO.Path]::GetFullPath($ZipPath) }
 
 $ExcludedDirNames = @("node_modules", ".git", "__pycache__", "out", "work", "src")
@@ -92,9 +92,9 @@ function New-Manifest($Root) {
     }
 
   [ordered]@{
-    name = "editable-pptx-skillset"
+    name = "pngtopptx-toolkit"
     version = $Version
-    description = "Local Codex SkillSet for converting slide images into editable PPTX with text-layer preprocessing, hardlocked reconstruction, visual QA, and orchestration."
+    description = "Local slide reconstruction toolkit for converting slide images into editable PPTX/HTML with text-layer preprocessing, validation, visual QA, and orchestration."
     generatedAt = (Get-Date).ToUniversalTime().ToString("o")
     skills = @(
       [ordered]@{ name = "slide-text-layer-inpaint"; path = "skills/slide-text-layer-inpaint"; role = "text layer separation, pseudo text handling, masks, inpainting, residual cleanup" }
@@ -104,8 +104,7 @@ function New-Manifest($Root) {
     )
     supportedPlatforms = @("Windows")
     testedPaths = [ordered]@{
-      legacyCodexSkills = "%USERPROFILE%\.codex\skills"
-      officialUserSkills = "%USERPROFILE%\.agents\skills"
+      defaultUserSkills = "%USERPROFILE%\.pngtopptx\skills"
     }
     doesNotBundle = @(
       "font files",
@@ -121,19 +120,14 @@ Write-Step "Source Skills root: $SourceSkillsRoot"
 Write-Step "Package root: $PackageRoot"
 
 if ($Clean) {
-  Write-Step "Cleaning package skill and agent payload folders"
+  Write-Step "Cleaning package skill payload folders"
   foreach ($name in $SkillNames) {
     $target = Join-Path $PackageRoot "skills\$name"
     if (Test-Path -LiteralPath $target) { Remove-Item -LiteralPath $target -Recurse -Force }
   }
-  $agentPayload = Join-Path $PackageRoot "agents\codex-agents"
-  if (Test-Path -LiteralPath $agentPayload) {
-    Get-ChildItem -LiteralPath $agentPayload -Filter "*.toml" -File | Remove-Item -Force
-  }
 }
 
 New-Item -ItemType Directory -Path (Join-Path $PackageRoot "skills") -Force | Out-Null
-New-Item -ItemType Directory -Path (Join-Path $PackageRoot "agents\codex-agents") -Force | Out-Null
 
 foreach ($name in $SkillNames) {
   $source = Join-Path $SourceSkillsRoot $name
@@ -142,19 +136,6 @@ foreach ($name in $SkillNames) {
   Copy-FilteredDirectory -Source $source -Destination $dest
   Write-Step "Copied $name"
 }
-
-$agentDest = Join-Path $PackageRoot "agents\codex-agents"
-Get-ChildItem -LiteralPath (Join-Path $PackageRoot "skills") -Recurse -Filter "*.toml" -File |
-  Where-Object { $_.FullName -match "\\assets\\codex-agents\\" } |
-  ForEach-Object {
-    $dest = Join-Path $agentDest $_.Name
-    if (Test-Path -LiteralPath $dest) {
-      $skillName = ($_.FullName -split "\\skills\\")[1].Split('\')[0]
-      $dest = Join-Path $agentDest "$skillName-$($_.Name)"
-    }
-    Copy-Item -LiteralPath $_.FullName -Destination $dest
-  }
-Write-Step "Collected agent templates"
 
 $manifest = New-Manifest -Root $PackageRoot
 $manifestPath = Join-Path $PackageRoot "MANIFEST.json"

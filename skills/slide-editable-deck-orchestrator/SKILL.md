@@ -24,7 +24,7 @@ This Skill does not replace those Skills. It plans and audits the handoffs betwe
 5. Identify `fail` / blocking slides from `visual_qa_summary*.json`.
 6. Group blocking slides into waves of at most 5.
 7. Choose a repair strategy by issue type.
-8. Generate a Codex-ready repair prompt for `slide-image-dual-render`.
+8. Generate a implementation-ready repair prompt for `slide-image-dual-render`.
 9. Rebuild the wave and rerun visual QA with `--source-slides`.
 10. Repeat until no slide remains `fail` / blocking or max iterations is reached.
 11. Run final full-deck hardlocked build, full-deck visual QA, and delivery packaging.
@@ -45,11 +45,11 @@ Read [quality-levels.md](references/quality-levels.md) when deciding acceptance 
 Run these from a deck project root:
 
 ```powershell
-node "$env:USERPROFILE\.codex\skills\slide-editable-deck-orchestrator\scripts\plan_deck_workflow.js" --project . --quality-level blocking-zero
-node "$env:USERPROFILE\.codex\skills\slide-editable-deck-orchestrator\scripts\summarize_visual_backlog.js" --summary out\visual_qa_summary.json
-node "$env:USERPROFILE\.codex\skills\slide-editable-deck-orchestrator\scripts\make_repair_wave_plan.js" --summary out\visual_qa_summary.json --quality-level blocking-zero --out work\repair_wave_plan.json
-node "$env:USERPROFILE\.codex\skills\slide-editable-deck-orchestrator\scripts\generate_repair_prompt.js" --project . --quality-level blocking-zero --wave-plan work\repair_wave_plan.json --wave-index 0
-node "$env:USERPROFILE\.codex\skills\slide-editable-deck-orchestrator\scripts\enforce_orchestration_state.js" --state work\orchestration_state.json --summary out\visual_qa_summary.json --quality-level blocking-zero
+node "$env:USERPROFILE\.pngtopptx\skills\slide-editable-deck-orchestrator\scripts\plan_deck_workflow.js" --project . --quality-level blocking-zero
+node "$env:USERPROFILE\.pngtopptx\skills\slide-editable-deck-orchestrator\scripts\summarize_visual_backlog.js" --summary out\visual_qa_summary.json
+node "$env:USERPROFILE\.pngtopptx\skills\slide-editable-deck-orchestrator\scripts\make_repair_wave_plan.js" --summary out\visual_qa_summary.json --quality-level blocking-zero --out work\repair_wave_plan.json
+node "$env:USERPROFILE\.pngtopptx\skills\slide-editable-deck-orchestrator\scripts\generate_repair_prompt.js" --project . --quality-level blocking-zero --wave-plan work\repair_wave_plan.json --wave-index 0
+node "$env:USERPROFILE\.pngtopptx\skills\slide-editable-deck-orchestrator\scripts\enforce_orchestration_state.js" --state work\orchestration_state.json --summary out\visual_qa_summary.json --quality-level blocking-zero
 ```
 
 All scripts use Node built-ins only. `--quality-level` is the canonical orchestrator option; `--quality` is accepted only as a backward-compatible alias.

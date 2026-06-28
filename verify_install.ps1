@@ -1,6 +1,5 @@
 param(
   [string]$TargetRoot = "",
-  [switch]$UseAgentsSkillsPath,
   [switch]$DryRun
 )
 
@@ -18,11 +17,7 @@ $SkillNames = @(
 if ($DryRun) {
   $TargetRoot = Join-Path $PackageRoot "skills"
 } elseif (-not $TargetRoot) {
-  if ($UseAgentsSkillsPath) {
-    $TargetRoot = Join-Path $env:USERPROFILE ".agents\skills"
-  } else {
-    $TargetRoot = Join-Path $env:USERPROFILE ".codex\skills"
-  }
+  $TargetRoot = Join-Path $env:USERPROFILE ".pngtopptx\skills"
 }
 
 $Failures = New-Object System.Collections.Generic.List[string]
@@ -64,7 +59,7 @@ function Check-OptionalExecutable($Label, $CommandNames, $KnownPaths) {
   }
 }
 
-Write-Host "Verifying editable-pptx-skillset"
+Write-Host "Verifying pngtopptx-toolkit"
 Write-Host "Target root: $TargetRoot"
 Write-Host "PowerShell: $($PSVersionTable.PSVersion)"
 
