@@ -142,5 +142,8 @@ python "$env:USERPROFILE\.pngtopptx\skills\slide-image-dual-render\scripts\valid
 
 ## License
 
-No open-source license is declared in this repository yet. Treat the contents as
-a personal toolkit unless the owner adds a license.
+MIT License. See [LICENSE](LICENSE).
+
+The license covers the toolkit source and repository-authored example materials.
+It does not grant rights to private input decks, third-party slide images, fonts,
+or other external assets you use with the toolkit.
