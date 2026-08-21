@@ -4,7 +4,9 @@
 from __future__ import annotations
 
 from pathlib import Path
+import json
 import sys
+import tempfile
 
 
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -163,6 +165,30 @@ def test_text_and_table_crop_recommendations_are_forbidden() -> None:
     assert_true(compare.crop_policy_allows_content_type(issue, "label") is False, "label crop must be forbidden")
 
 
+def test_explicit_design_profile_is_rejected() -> None:
+    with tempfile.TemporaryDirectory() as tmpdir:
+        path = Path(tmpdir) / "active.json"
+        path.write_text(json.dumps({"profileId": "academic-editorial"}), encoding="utf-8")
+        try:
+            compare.load_calibration_profile(path)
+        except ValueError as exc:
+            assert_true("schemaVersion" in str(exc), f"unexpected error: {exc}")
+        else:
+            raise AssertionError("design profile must not be accepted as QA calibration")
+
+
+def test_corrupt_explicit_profile_is_rejected_without_fallback() -> None:
+    with tempfile.TemporaryDirectory() as tmpdir:
+        path = Path(tmpdir) / "qa.json"
+        path.write_text("{", encoding="utf-8")
+        try:
+            compare.load_calibration_profile(path)
+        except ValueError as exc:
+            assert_true("cannot be loaded" in str(exc), f"unexpected error: {exc}")
+        else:
+            raise AssertionError("corrupt profile must fail closed")
+
+
 def main() -> int:
     tests = [
         test_slide_1_like_metrics,
@@ -174,6 +200,8 @@ def main() -> int:
         test_slide_11_like_fix_plan_allows_small_non_text_technical_crops,
         test_slide_13_like_fix_plan_recommends_board_texture_crops,
         test_text_and_table_crop_recommendations_are_forbidden,
+        test_explicit_design_profile_is_rejected,
+        test_corrupt_explicit_profile_is_rejected_without_fallback,
     ]
     for test in tests:
         test()

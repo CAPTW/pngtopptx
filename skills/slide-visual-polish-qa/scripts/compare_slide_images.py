@@ -253,43 +253,60 @@ def clean_metrics(metrics: dict[str, Any]) -> dict[str, Any]:
     return {k: v for k, v in metrics.items() if not k.startswith("_")}
 
 
+CALIBRATION_PROFILE_SCHEMA = "slide-visual-polish-qa.calibration-profile.v1"
+
+
+def validate_calibration_profile(data: Any, *, source: Path) -> dict[str, Any]:
+    """Validate the QA calibration contract and reject design-profile JSON."""
+
+    if not isinstance(data, dict):
+        raise ValueError(f"visual QA calibration profile must be a JSON object: {source}")
+    if data.get("schemaVersion") != CALIBRATION_PROFILE_SCHEMA:
+        raise ValueError(
+            "visual QA calibration profile schemaVersion must be "
+            f"{CALIBRATION_PROFILE_SCHEMA!r}: {source}"
+        )
+    groups = {
+        "knownGoodMetricBands": ("pixelMax", "maeMax", "edgeMax", "ssimMin", "paletteMax"),
+        "borderlineMetricBands": ("pixelMax", "maeMax", "edgeMax", "ssimMin", "paletteMax"),
+        "knownBadMetricBands": (
+            "pixelMin",
+            "maeMin",
+            "edgeMin",
+            "ssimMax",
+            "paletteMin",
+            "requiredSignalsForBlocking",
+        ),
+    }
+    for group_name, required_metrics in groups.items():
+        group = data.get(group_name)
+        if not isinstance(group, dict):
+            raise ValueError(f"visual QA calibration profile lacks {group_name}: {source}")
+        for comparison_name in ("sourceRenderSimilarity", "pptxHtmlConsistency"):
+            band = group.get(comparison_name)
+            if not isinstance(band, dict):
+                raise ValueError(
+                    f"visual QA calibration profile lacks {group_name}.{comparison_name}: {source}"
+                )
+            for metric_name in required_metrics:
+                value = band.get(metric_name)
+                if isinstance(value, bool) or not isinstance(value, (int, float)):
+                    raise ValueError(
+                        "visual QA calibration profile requires numeric "
+                        f"{group_name}.{comparison_name}.{metric_name}: {source}"
+                    )
+    return data
+
+
 def load_calibration_profile(profile_path: Path | None = None) -> dict[str, Any]:
-    path = profile_path or DEFAULT_PROFILE_PATH
+    """Load the selected calibration profile without a silent fallback."""
+
+    path = (profile_path or DEFAULT_PROFILE_PATH).expanduser().resolve()
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
-        if isinstance(data, dict):
-            return data
-    except Exception:
-        pass
-    return {
-        "schemaVersion": "slide-visual-polish-qa.calibration-profile.v1",
-        "knownGoodMetricBands": {
-            "sourceRenderSimilarity": {"pixelMax": 0.21, "maeMax": 0.105, "edgeMax": 0.115, "ssimMin": 0.6, "paletteMax": 0.15},
-            "pptxHtmlConsistency": {"pixelMax": 0.11, "maeMax": 0.055, "edgeMax": 0.09, "ssimMin": 0.79, "paletteMax": 0.055},
-        },
-        "borderlineMetricBands": {
-            "sourceRenderSimilarity": {"pixelMax": 0.24, "maeMax": 0.13, "edgeMax": 0.135, "ssimMin": 0.44, "paletteMax": 0.23},
-            "pptxHtmlConsistency": {"pixelMax": 0.13, "maeMax": 0.065, "edgeMax": 0.09, "ssimMin": 0.74, "paletteMax": 0.07},
-        },
-        "knownBadMetricBands": {
-            "sourceRenderSimilarity": {
-                "pixelMin": 0.25,
-                "maeMin": 0.14,
-                "edgeMin": 0.145,
-                "ssimMax": 0.42,
-                "paletteMin": 0.28,
-                "requiredSignalsForBlocking": 2,
-            },
-            "pptxHtmlConsistency": {
-                "pixelMin": 0.13,
-                "maeMin": 0.065,
-                "edgeMin": 0.095,
-                "ssimMax": 0.72,
-                "paletteMin": 0.08,
-                "requiredSignalsForBlocking": 3,
-            },
-        },
-    }
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise ValueError(f"visual QA calibration profile cannot be loaded: {path}: {exc}") from exc
+    return validate_calibration_profile(data, source=path)
 
 
 def metric_number(metrics: dict[str, Any], key: str, default: float | None = None) -> float | None:
@@ -1462,7 +1479,13 @@ def main(argv: list[str] | None = None) -> int:
     source_dir_p = resolve_path(project, args.source_dir)
     qa_root = resolve_path(project, args.qa_dir)
     out_summary = resolve_path(project, args.out_summary)
-    profile = load_calibration_profile(resolve_path(project, args.profile) if args.profile else None)
+    try:
+        profile = load_calibration_profile(
+            resolve_path(project, args.profile) if args.profile else None
+        )
+    except ValueError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 2
 
     if not source_dir_p.exists():
         print(f"ERROR: source directory not found: {source_dir_p}", file=sys.stderr)

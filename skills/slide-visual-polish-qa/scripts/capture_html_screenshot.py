@@ -33,6 +33,9 @@ class ToolUnavailable(CaptureError):
     pass
 
 
+CAPTURE_CACHE_CONTRACT = "slide-visual-polish-qa.html-capture-cache.v1"
+
+
 def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
@@ -236,6 +239,73 @@ def exact_dimension_metadata(path: Path, expected_width: int, expected_height: i
     }
 
 
+def capture_from_hash_cache(
+    html: Path,
+    mappings: list[SlideMapEntry] | list[int],
+    out_dir: Path,
+    width: int,
+    height: int,
+) -> dict:
+    """Reuse captures only when HTML, mapping, dimensions, and PNG hash match."""
+
+    resolved = coerce_mappings(mappings)
+    html_hash = sha256_file(html)
+    captured: list[dict] = []
+    for entry in resolved:
+        dest = qa_dir(out_dir, entry.source_slide) / "html_screenshot.png"
+        metadata_path = dest.with_name("html_screenshot_metadata.json")
+        try:
+            metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+            raise ToolUnavailable(
+                f"HTML screenshot cache metadata is unavailable: {metadata_path}: {exc}"
+            ) from exc
+        expected = {
+            "htmlSha256": html_hash,
+            "sourceSlideId": entry.source_slide,
+            "physicalSlideIndex": entry.physical_slide,
+            "htmlSlideIndex": entry.html_slide,
+            "deviceScaleFactor": 1,
+            "modifiedHtml": False,
+        }
+        for key, value in expected.items():
+            if metadata.get(key) != value:
+                raise ToolUnavailable(
+                    f"HTML screenshot cache mismatch for slide {entry.source_slide}: {key}"
+                )
+        if metadata.get("viewport") != {"width": width, "height": height}:
+            raise ToolUnavailable(
+                f"HTML screenshot cache viewport mismatch for slide {entry.source_slide}"
+            )
+        if metadata.get("qaStaticModeUsed") is not True:
+            raise ToolUnavailable(
+                f"HTML screenshot cache lacks qa-static evidence for slide {entry.source_slide}"
+            )
+        if Path(str(metadata.get("html", ""))).resolve() != html.resolve():
+            raise ToolUnavailable(
+                f"HTML screenshot cache path mismatch for slide {entry.source_slide}"
+            )
+        if Path(str(metadata.get("output", ""))).resolve() != dest.resolve():
+            raise ToolUnavailable(
+                f"HTML screenshot output path mismatch for slide {entry.source_slide}"
+            )
+        exact_dimension_metadata(
+            dest, width, height, f"Cached HTML source slide {entry.source_slide}"
+        )
+        if metadata.get("outputSha256") != sha256_file(dest):
+            raise ToolUnavailable(
+                f"HTML screenshot cache PNG hash mismatch for slide {entry.source_slide}"
+            )
+        cached_metadata = metadata | {
+            "captureCacheContract": CAPTURE_CACHE_CONTRACT,
+            "cacheHit": True,
+        }
+        if cached_metadata != metadata:
+            write_json(metadata_path, cached_metadata)
+        captured.append(cached_metadata)
+    return {"tool": "hash-bound-html-capture-cache", "captured": captured}
+
+
 def capture_with_playwright(html: Path, mappings: list[SlideMapEntry] | list[int], out_dir: Path, width: int, height: int) -> dict:
     try:
         from playwright.sync_api import sync_playwright  # type: ignore
@@ -340,6 +410,8 @@ def capture_with_playwright(html: Path, mappings: list[SlideMapEntry] | list[int
                     "output": str(dest),
                     "outputSha256": sha256_file(dest),
                     "modifiedHtml": False,
+                    "captureCacheContract": CAPTURE_CACHE_CONTRACT,
+                    "cacheHit": False,
                 } | dimensions
                 write_json(dest.with_name("html_screenshot_metadata.json"), metadata)
                 captured.append(metadata)
@@ -455,6 +527,8 @@ def capture_with_chrome_cli(html: Path, mappings: list[SlideMapEntry] | list[int
             "output": str(dest),
             "outputSha256": sha256_file(dest),
             "modifiedHtml": False,
+            "captureCacheContract": CAPTURE_CACHE_CONTRACT,
+            "cacheHit": False,
         } | dimensions
         write_json(dest.with_name("html_screenshot_metadata.json"), metadata)
         captured.append(metadata)
@@ -508,6 +582,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--width", type=int, default=1672, help="Viewport width. Default: 1672.")
     parser.add_argument("--height", type=int, default=941, help="Viewport height. Default: 941.")
     parser.add_argument("--project", default=".", help="Project root. Default: current directory.")
+    parser.add_argument(
+        "--no-cache",
+        action="store_true",
+        help="Force a fresh browser capture even when the hash-bound screenshot cache is valid.",
+    )
     args = parser.parse_args(argv)
 
     project = Path(args.project).expanduser().resolve()
@@ -534,7 +613,12 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     errors: list[str] = []
-    for method in (capture_with_playwright, capture_with_chrome_cli):
+    methods = (
+        (capture_with_playwright, capture_with_chrome_cli)
+        if args.no_cache
+        else (capture_from_hash_cache, capture_with_playwright, capture_with_chrome_cli)
+    )
+    for method in methods:
         try:
             result = method(html, mappings, out_dir, args.width, args.height)
             write_json(

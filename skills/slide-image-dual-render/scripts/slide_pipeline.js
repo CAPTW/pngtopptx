@@ -33,6 +33,7 @@ Options:
   --allow-large-batch  Allow a reconstruction batch larger than --max-batch-size.
   --profile <path>     DECK_PROFILE path. Relative paths resolve from project root.
   --assets <path>      DECK_ASSETS path. Relative paths resolve from project root.
+  --icon-usage <path>  Explicit on-demand icon manifest. Relative paths resolve from project root.
   --crop-plan <path>   Crop plan JSON. Relative paths resolve from project root. Default: work/crop_plan.json.
   --node-path <path>   Node dependency directory, usually .\\node_modules. Relative paths resolve from project root.
   --pxw <number>       Source slide pixel width.
@@ -89,6 +90,7 @@ function parseArgs(argv) {
     else if (a === '--allow-large-batch') args.allowLargeBatch = true;
     else if (a === '--profile') args.profile = next();
     else if (a === '--assets') args.assets = next();
+    else if (a === '--icon-usage') args.iconUsage = next();
     else if (a === '--crop-plan') args.cropPlan = next();
     else if (a === '--node-path') args.nodePath = next();
     else if (a === '--pxw') args.pxw = next();
@@ -147,6 +149,9 @@ function resolveLayout(args) {
   const pptxOut = resolveFromProject(projectRoot, args.pptxOut, path.join('out', 'deck.pptx'));
   const htmlOut = resolveFromProject(projectRoot, args.htmlOut, path.join('out', 'deck.html'));
   const profilePath = args.profile ? resolveFromProject(projectRoot, args.profile) : (process.env.DECK_PROFILE || '');
+  const iconUsagePath = args.iconUsage
+    ? resolveFromProject(projectRoot, args.iconUsage)
+    : (process.env.DECK_ICON_USAGE ? resolveFromProject(projectRoot, process.env.DECK_ICON_USAGE) : '');
   const cropPlan = resolveCropPlan(projectRoot, args);
   return {
     projectRoot,
@@ -164,7 +169,10 @@ function resolveLayout(args) {
     generateEvidencePath: path.join(SCRIPT_ROOT, 'generate_evidence.js'),
     finalGatePath: path.join(SCRIPT_ROOT, 'final_gate.js'),
     makeBgPath: path.join(SCRIPT_ROOT, 'make_bg.py'),
+    backgroundManifestPath: path.join(assetsDir, 'bg.manifest.json'),
     makeIconsPath: path.join(SCRIPT_ROOT, 'make_icons.js'),
+    iconUsagePath,
+    iconManifestPath: path.join(assetsDir, 'icons', 'manifest.json'),
     makeCropsPath: path.join(SCRIPT_ROOT, 'make_crops.py'),
     kitJsPath: path.join(SCRIPT_ROOT, 'lib', 'kit.js'),
     atomsPptxPath: path.join(SCRIPT_ROOT, 'lib', 'atoms_pptx.js'),
@@ -203,6 +211,9 @@ function validatePaths(args, layout) {
   if (!dirExists(layout.srcDir) && !args.qaOnly && !args.dryRun) errors.push(`Deck src/ directory is missing: ${layout.srcDir}`);
   if (!args.skipCrops && !args.qaOnly && !args.dryRun && !fileExists(layout.cropPlanPath)) {
     errors.push(`Crop plan is missing: ${layout.cropPlanPath}. Create work/crop_plan.json, pass --crop-plan <path>, or pass --skip-crops only for a crop-free native-only deck.`);
+  }
+  if (layout.iconUsagePath && !args.skipAssets && !args.qaOnly && !args.dryRun && !fileExists(layout.iconUsagePath)) {
+    errors.push(`Icon usage manifest is missing: ${layout.iconUsagePath}`);
   }
   for (const outPath of [layout.pptxOut, layout.htmlOut]) {
     if (!isInside(layout.projectRoot, outPath)) errors.push(`Output path must stay inside projectRoot: ${outPath}`);
@@ -433,6 +444,7 @@ function traceSkeleton(args, layout, runId, startTimeMs, deps) {
     args: args.raw,
     commandArguments: args.raw,
     DECK_PROFILE: layout.profilePath || process.env.DECK_PROFILE || '',
+    DECK_ICON_USAGE: layout.iconUsagePath || '',
     DECK_ASSETS: layout.assetsDir,
     DECK_PXW: args.pxw || process.env.DECK_PXW || '',
     DECK_PXH: args.pxh || process.env.DECK_PXH || '',
@@ -458,6 +470,12 @@ function traceSkeleton(args, layout, runId, startTimeMs, deps) {
     cropPlanHash: cropPlanExists ? sha256(layout.cropPlanPath) : '',
     cropManifestPath: layout.manifestPath,
     cropManifestHash: manifestExists ? sha256(layout.manifestPath) : '',
+    iconUsagePath: layout.iconUsagePath,
+    iconUsageHash: layout.iconUsagePath && fileExists(layout.iconUsagePath) ? sha256(layout.iconUsagePath) : '',
+    iconManifestPath: layout.iconManifestPath,
+    iconManifestHash: fileExists(layout.iconManifestPath) ? sha256(layout.iconManifestPath) : '',
+    backgroundManifestPath: layout.backgroundManifestPath,
+    backgroundManifestHash: fileExists(layout.backgroundManifestPath) ? sha256(layout.backgroundManifestPath) : '',
     nodePathUsed: deps && deps.nodePathUsed ? deps.nodePathUsed : '',
     dependencyResolutionMode: deps ? deps.mode : 'missing',
     dependencyResolutionSource: deps ? deps.source : 'not checked',
@@ -487,6 +505,9 @@ function refreshTraceArtifacts(trace, layout) {
   trace.hashes = computeHashes(layout);
   trace.cropPlanHash = fileExists(layout.cropPlanPath) ? sha256(layout.cropPlanPath) : '';
   trace.cropManifestHash = fileExists(layout.manifestPath) ? sha256(layout.manifestPath) : '';
+  trace.iconUsageHash = layout.iconUsagePath && fileExists(layout.iconUsagePath) ? sha256(layout.iconUsagePath) : '';
+  trace.iconManifestHash = fileExists(layout.iconManifestPath) ? sha256(layout.iconManifestPath) : '';
+  trace.backgroundManifestHash = fileExists(layout.backgroundManifestPath) ? sha256(layout.backgroundManifestPath) : '';
   trace.nativeObjectManifestHash = fileExists(layout.nativeObjectManifestPath) ? sha256(layout.nativeObjectManifestPath) : '';
   trace.cropCoverageSummaryHash = fileExists(layout.cropCoverageSummaryPath) ? sha256(layout.cropCoverageSummaryPath) : '';
   trace.qaEvidenceSummaryHash = fileExists(layout.qaEvidenceSummaryPath) ? sha256(layout.qaEvidenceSummaryPath) : '';
@@ -539,7 +560,7 @@ function main() {
     if (!args.qaOnly) {
       if (!args.skipAssets) {
         runPython('background generation', layout.makeBgPath, [], layout, env);
-        runNode('icon generation', layout.makeIconsPath, [], layout, env);
+        runNode('icon generation', layout.makeIconsPath, layout.iconUsagePath ? ['--usage', layout.iconUsagePath] : [], layout, env);
       }
       if (!args.skipCrops) {
         runPython('crop generation', layout.makeCropsPath, [], layout, env);

@@ -133,8 +133,16 @@ gradient, unchanged. (You can still edit the script for a fully bespoke backdrop
 baked into this image — see `pptxgenjs-gotchas.md`.)
 
 ### Icons
-`DECK_PROFILE=… node make_icons.js` renders every concept in its `MAP` × 7 palette colors to
-`assets/icons/<concept>_<color>.png` (Tabler line-icons via react-icons → SVG → sharp PNG). The seven
+`DECK_PROFILE=… node make_icons.js --usage work/icon_usage.json` renders only the explicit
+concept/color pairs used by the deck to `assets/icons/<concept>_<color>.png` (Tabler line-icons via
+react-icons → SVG → sharp PNG). `icon_usage.json` uses
+`slide-image-dual-render.icon-usage.v1` and an `icons` array of explicit
+`{"concept":"...","color":"..."}` pairs. The integrator unions per-slide manifests into
+`work/icon_usage.json`; unknown concepts/colors fail closed. `assets/icons/manifest.json` binds the
+palette, renderer fingerprint, request hash, and PNG hashes, so unchanged icons are not rendered
+again. Missing requested icons use bounded parallelism (`--workers`, default 16;
+`DECK_ICON_WORKERS` may lower it), while cache hits do not load React, react-icons, or sharp.
+Omitting `--usage` remains a compatibility mode that renders every `MAP` × palette pair. The seven
 color **names** (`white lblue cyan red green gold blue`) stay fixed; their hex VALUES follow the active
 `DECK_PROFILE` (no profile = original colors).
 Add concepts by extending `MAP`. **Confirm a concept exists before authoring with it**; a

@@ -10,6 +10,7 @@ near-white base with a faint cool glow + vignette so shadowed cards still separa
 """
 import os
 import json
+import hashlib
 import numpy as np
 from PIL import Image
 
@@ -18,6 +19,30 @@ os.makedirs(ASSETS, exist_ok=True)
 PXW, PXH = int(os.environ.get("DECK_PXW", 1672)), int(os.environ.get("DECK_PXH", 941))
 # 2x for crispness
 W, H = PXW * 2, PXH * 2
+BG_PATH = os.path.join(ASSETS, "bg.png")
+MANIFEST_PATH = os.path.join(ASSETS, "bg.manifest.json")
+
+
+def file_hash(path):
+    digest = hashlib.sha256()
+    with open(path, "rb") as stream:
+        for block in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def cache_key(profile_path):
+    profile_hash = file_hash(profile_path) if profile_path and os.path.isfile(profile_path) else None
+    payload = {
+        "schemaVersion": "slide-image-dual-render.background-cache.v1",
+        "scriptHash": file_hash(__file__),
+        "profileHash": profile_hash,
+        "pixelWidth": PXW,
+        "pixelHeight": PXH,
+        "scale": 2,
+    }
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest(), payload
 
 
 def hx(c, default):
@@ -41,6 +66,19 @@ if pp:
             prof = json.load(f)
     except Exception as e:  # noqa: BLE001
         print("!! DECK_PROFILE unreadable, using default bg:", e)
+key, cache_contract = cache_key(pp)
+try:
+    with open(MANIFEST_PATH, "r", encoding="utf-8") as stream:
+        previous = json.load(stream)
+    if (
+        previous.get("cacheKey") == key
+        and os.path.isfile(BG_PATH)
+        and previous.get("outputSha256") == file_hash(BG_PATH)
+    ):
+        print("bg.png cached", (H, W, 3))
+        raise SystemExit(0)
+except (OSError, ValueError, TypeError, json.JSONDecodeError):
+    pass
 bgd = (prof or {}).get("dimensions", {}).get("background", {})
 btype = bgd.get("type", "gradient-dark")
 
@@ -74,5 +112,16 @@ else:
     img = img * (1 - vig[..., None] * 0.85)
 
 img = np.clip(img, 0, 255).astype(np.uint8)
-Image.fromarray(img, "RGB").save(os.path.join(ASSETS, "bg.png"))
+Image.fromarray(img, "RGB").save(BG_PATH)
+manifest = {
+    **cache_contract,
+    "cacheKey": key,
+    "output": "bg.png",
+    "outputSha256": file_hash(BG_PATH),
+}
+temporary = MANIFEST_PATH + f".{os.getpid()}.tmp"
+with open(temporary, "w", encoding="utf-8", newline="\n") as stream:
+    json.dump(manifest, stream, ensure_ascii=False, indent=2, sort_keys=True)
+    stream.write("\n")
+os.replace(temporary, MANIFEST_PATH)
 print("bg.png", img.shape, "type=", btype)

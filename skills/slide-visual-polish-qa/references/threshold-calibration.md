@@ -24,6 +24,12 @@ Machine-readable profile:
 
 - `assets/calibration/default-visual-qa-profile.json`
 
+The comparison entrypoint must receive this file explicitly through `--profile`
+when an orchestration plan pins it. A deck design profile such as
+`styles/active.json` is not a QA calibration profile. Missing, malformed, or
+wrong-schema explicit profiles fail closed; the tool must not silently substitute
+embedded thresholds.
+
 The calibrated `qa-polish` gate distinguishes known-good editable
 reconstruction drift, borderline polish-needed slides, and true blocking
 failures. Do not use these observations to make slide 12 pass; slide 12 remains
