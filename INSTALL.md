@@ -25,7 +25,7 @@ Installed Skills:
 %USERPROFILE%\.pngtopptx\skills\slide-text-layer-inpaint
 %USERPROFILE%\.pngtopptx\skills\slide-image-dual-render
 %USERPROFILE%\.pngtopptx\skills\slide-visual-polish-qa
-%USERPROFILE%\.pngtopptx\skils\slide-editable-deck-orchestrator
+%USERPROFILE%\.pngtopptx\skills\slide-editable-deck-orchestrator
 ```
 
 ## Codex-native install
