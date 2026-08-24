@@ -46,6 +46,7 @@ for (const relPath of [
   'skills/slide-image-dual-render/scripts/integrate_subagent_work.js',
   'skills/slide-image-dual-render/scripts/validate_agent_work.js',
   'skills/slide-image-dual-render/scripts/test_font_pipeline_integration.js',
+  'skills/slide-image-dual-render/scripts/test_font_usage_integration.js',
   'skills/slide-image-dual-render/assets/codex-hardlock/AGENTS.md',
 ]) requirePath(path.join(root, ...relPath.split('/')));
 

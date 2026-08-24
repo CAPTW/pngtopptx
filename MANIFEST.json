@@ -1,8 +1,8 @@
 {
   "name": "pngtopptx-toolkit",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Local slide reconstruction toolkit for converting slide images into editable PPTX/HTML with text-layer preprocessing, validation, visual QA, and orchestration.",
-  "generatedAt": "2026-08-24T10:34:01.9877310Z",
+  "generatedAt": "2026-08-24T10:44:52.3173115Z",
   "modules": [
     {
       "name": "slide-text-layer-inpaint",
@@ -70,8 +70,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "f147a39b31412570f089fc0d27d4a8ae94623b56206fdf7d964339e0acb2a341",
-      "bytes": 866
+      "sha256": "d006b3dcd7d5bbd32c8bdc70f8ffd4185312f03f6ccf476b2c80de83222a9fcc",
+      "bytes": 1017
     },
     {
       "path": "DEPENDENCIES.md",
@@ -305,8 +305,8 @@
     },
     {
       "path": "skills\\slide-image-dual-render\\references\\codex-subagents.md",
-      "sha256": "41997175b046dc327cfed00b5b51fb1d81427355a0ebbb1e52a6801c5967e037",
-      "bytes": 18315
+      "sha256": "c8a69b14414cdf3f9eca2fcd8b0aa04515a9f8b2c6287ce926cc3ed6126da651",
+      "bytes": 18700
     },
     {
       "path": "skills\\slide-image-dual-render\\references\\hardlock-mode.md",
@@ -390,8 +390,8 @@
     },
     {
       "path": "skills\\slide-image-dual-render\\scripts\\integrate_subagent_work.js",
-      "sha256": "5036d93422803016c6fa3cc99af21953c4bf103fd35770a9018afbbecbeb4094",
-      "bytes": 8588
+      "sha256": "8ea5f0043082ba725eff9811476f21f2b009032c5bb225d61f96dc54f8bd5f88",
+      "bytes": 10809
     },
     {
       "path": "skills\\slide-image-dual-render\\scripts\\lib\\atoms_html.js",
@@ -474,6 +474,11 @@
       "bytes": 2309
     },
     {
+      "path": "skills\\slide-image-dual-render\\scripts\\test_font_usage_integration.js",
+      "sha256": "b91c880efcbdd7e0babd6d3091d1526fd1b434069e69ec8d816bed4de90ef10c",
+      "bytes": 2377
+    },
+    {
       "path": "skills\\slide-image-dual-render\\scripts\\test_html_qa_static_mode.js",
       "sha256": "82d5b9c6259c942933e8a7d68866e793256258b29857184fc4d8a7e3cd25cc78",
       "bytes": 3438
@@ -490,8 +495,8 @@
     },
     {
       "path": "skills\\slide-image-dual-render\\scripts\\validate_agent_work.js",
-      "sha256": "03bcc85338c0d3359fb759e7be3aafbb5b73bf8f4cea4822897576bccc3ad2fb",
-      "bytes": 6189
+      "sha256": "edfdba8d9a38697b48d038304d6a10b4bad9ccb9c3ee95147fc4cb9afb56a231",
+      "bytes": 7112
     },
     {
       "path": "skills\\slide-image-dual-render\\scripts\\validate_pptx_package.py",
@@ -500,8 +505,8 @@
     },
     {
       "path": "skills\\slide-image-dual-render\\SKILL.md",
-      "sha256": "4e2bdd25786b923d27c5a5e49e70e30479564703701d877a028fa6ca71adf96b",
-      "bytes": 32509
+      "sha256": "b6ed33b1f305142b4c3f6814037eec9767aeff970e3be6a940746788028c483f",
+      "bytes": 32777
     },
     {
       "path": "skills\\slide-image-dual-render\\styles\\_schema.md",
@@ -680,8 +685,8 @@
     },
     {
       "path": "tests\\verify_skillset_layout.js",
-      "sha256": "f41b897afff4fb9edfabdc324ab29f5bf1feb80578a138e6613d56b49a680b22",
-      "bytes": 3230
+      "sha256": "a888dd4b0a5401cd3868c872c911f6bd866e9b9e831a5282daf38db44f894b3b",
+      "bytes": 3305
     },
     {
       "path": "uninstall.ps1",
@@ -700,7 +705,7 @@
     },
     {
       "path": "VERSION",
-      "sha256": "b784da815c46185f5fe9db51d857c871a6728904d067a4e7fa4020e41d1dd3c8",
+      "sha256": "79ed0127abc8a47f98fe8d98cd6da156581c34be7e3a938f752b9b63d872c048",
       "bytes": 8
     }
   ]

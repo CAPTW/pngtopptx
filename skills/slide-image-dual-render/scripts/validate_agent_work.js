@@ -84,6 +84,7 @@ function validateSlide(entry) {
     'measurements.json',
     'profile_override.json',
     'icon_usage.json',
+    'font_usage.json',
     'crop_plan.json',
     `s${n}.fragment.js`,
     'editability_inventory.md',
@@ -97,6 +98,7 @@ function validateSlide(entry) {
   const profileFile = path.join(dir, 'profile_override.json');
   const cropFile = path.join(dir, 'crop_plan.json');
   const iconUsageFile = path.join(dir, 'icon_usage.json');
+  const fontUsageFile = path.join(dir, 'font_usage.json');
   const fragmentFile = path.join(dir, `s${n}.fragment.js`);
 
   const measurements = fs.existsSync(measurementsFile) ? readJson(measurementsFile, issues) : null;
@@ -130,6 +132,20 @@ function validateSlide(entry) {
       if (!row || !/^[a-z][a-z0-9]*$/.test(String(row.concept || '')) || !/^(white|lblue|cyan|red|green|gold|blue)$/.test(String(row.color || ''))) {
         issues.push(`${iconUsageFile}: icons[${idx}] has invalid concept/color`);
       }
+    });
+  }
+
+  const fontUsage = fs.existsSync(fontUsageFile) ? readJson(fontUsageFile, issues) : null;
+  if (fontUsage && (fontUsage.schemaVersion !== 'slide-image-dual-render.font-usage.v1' || !Array.isArray(fontUsage.fonts))) {
+    issues.push(`${fontUsageFile}: slide-image-dual-render.font-usage.v1 with fonts array required`);
+  } else if (fontUsage) {
+    const seen = new Set();
+    fontUsage.fonts.forEach((row, idx) => {
+      const originalFont = String(row && (row.originalFont || row.original || row.fontFamily || row.name) || '').trim();
+      if (!originalFont) issues.push(`${fontUsageFile}: fonts[${idx}] requires originalFont`);
+      const key = originalFont.toLowerCase().replace(/\s+/g, ' ');
+      if (key && seen.has(key)) issues.push(`${fontUsageFile}: duplicate original font ${originalFont}`);
+      seen.add(key);
     });
   }
 

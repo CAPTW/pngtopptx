@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.1
+
+- Added validated per-slide `font_usage.json` authoring artifacts and deterministic deck-level font manifest merging before font preflight.
+
 ## 0.2.0
 
 - Added original-font collection across slide code and usage manifests, Windows system/user font discovery, exact local resolution, and auditable Original-to-Resolved mappings.

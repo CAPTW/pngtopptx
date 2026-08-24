@@ -112,6 +112,10 @@ decision, conversion continues. Every text object and run keeps an `Original -> 
 `out/font_resolution_manifest.json` and `out/native_object_manifest.json`. The renderer uses the same
 resolved font for PPTX and HTML and never imports a remote webfont for parity QA.
 
+Every reconstruction worker writes `work/slideXX/font_usage.json` with schema
+`slide-image-dual-render.font-usage.v1`. The official integrator deterministically merges those files
+into `work/font_usage.json` before font preflight; it does not infer or install fonts.
+
 Generated HTML supports a diagnostic static mode for screenshot QA:
 
 ```text

@@ -91,6 +91,7 @@ deck/
     slide01/
       measurements.json
       profile_override.json
+      font_usage.json
       crop_plan.json
       reconstruction_notes.md
       s1.fragment.js
@@ -163,6 +164,12 @@ function s3(s) {
 `editability_inventory.md`
 : List what is editable native output and what is baked into raster crops. This becomes delivery
   summary material.
+
+`font_usage.json`
+: Record original font families observed for that slide using schema
+  `slide-image-dual-render.font-usage.v1` and a `fonts` array. Each row uses `originalFont` plus
+  optional `role` and `source`. The integrator merges these into deck-level `work/font_usage.json`;
+  resolution and any user approval pause happen later in `font_preflight.js`.
 
 `qa_report.md`
 : The QA gate's per-slide verdict. Use clear fix bullets tied to `sN.fragment.js` or
