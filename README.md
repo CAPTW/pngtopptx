@@ -38,6 +38,11 @@ Pass `-TargetRoot` if you want a different local install directory.
 - Separates crop-heavy preservation from native object reconstruction.
 - Records evidence such as native object manifests and crop coverage summaries.
 - Provides validation gates for route integrity, crop metadata, visual QA, and PPTX package openability.
+- Resolves original fonts against both system-wide and per-user Windows fonts, records
+  every Original-to-Resolved mapping, and never installs a missing font without an
+  explicit user decision.
+- Supports on-demand icon generation and a hash-validated `--qa-only` fast path that
+  reuses unchanged PPTX/HTML outputs.
 
 ## Public Success Case
 
@@ -93,9 +98,25 @@ node "$env:USERPROFILE\.pngtopptx\skills\slide-image-dual-render\scripts\slide_p
   --quality preservation `
   --target both `
   --crop-plan work\crop_plan.json `
+  --font-usage work\font_usage.json `
+  --font-install-decision ask `
+  --icon-usage work\icon_usage.json `
   --node-path .\node_modules `
   --pptx-out out\deck.pptx `
   --html-out out\deck.html
+```
+
+If the font preflight reports `USER_DECISION_REQUIRED`, ask before installing
+anything. Rerun with `--font-install-decision declined` or `unavailable` to
+continue with a documented fallback. The resulting
+`out/font_resolution_manifest.json` preserves the original and resolved font
+for every mapping.
+
+To re-run the gates without rebuilding unchanged outputs:
+
+```powershell
+node "$env:USERPROFILE\.pngtopptx\skills\slide-image-dual-render\scripts\slide_pipeline.js" `
+  --project . --slides 1 --quality reconstruction --target both --qa-only
 ```
 
 Run the final gate before delivery:

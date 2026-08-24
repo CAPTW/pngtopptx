@@ -2,7 +2,8 @@ param(
   [string]$SourceSkillsRoot = "",
   [string]$PackageRoot = "",
   [string]$ZipPath = "",
-  [switch]$Clean
+  [switch]$Clean,
+  [switch]$ManifestOnly
 )
 
 Set-StrictMode -Version Latest
@@ -15,7 +16,9 @@ $SkillNames = @(
   "slide-editable-deck-orchestrator"
 )
 
-$Version = "0.1.0"
+$VersionFile = Join-Path $PSScriptRoot "VERSION"
+if (-not (Test-Path -LiteralPath $VersionFile)) { throw "Missing VERSION file: $VersionFile" }
+$Version = (Get-Content -Raw -LiteralPath $VersionFile).Trim()
 if (-not $SourceSkillsRoot) { $SourceSkillsRoot = Join-Path $env:USERPROFILE ".pngtopptx\skills" }
 if (-not $PackageRoot) { $PackageRoot = $PSScriptRoot }
 $SourceSkillsRoot = (Resolve-Path -LiteralPath $SourceSkillsRoot).Path
@@ -96,7 +99,7 @@ function New-Manifest($Root) {
     version = $Version
     description = "Local slide reconstruction toolkit for converting slide images into editable PPTX/HTML with text-layer preprocessing, validation, visual QA, and orchestration."
     generatedAt = (Get-Date).ToUniversalTime().ToString("o")
-    skills = @(
+    modules = @(
       [ordered]@{ name = "slide-text-layer-inpaint"; path = "skills/slide-text-layer-inpaint"; role = "text layer separation, pseudo text handling, masks, inpainting, residual cleanup" }
       [ordered]@{ name = "slide-image-dual-render"; path = "skills/slide-image-dual-render"; role = "editable PPTX/HTML rendering, hardlock, reconstruction, PPTX openability" }
       [ordered]@{ name = "slide-visual-polish-qa"; path = "skills/slide-visual-polish-qa"; role = "visual QA, screenshot/raster comparison, fix plans" }
@@ -119,7 +122,7 @@ function New-Manifest($Root) {
 Write-Step "Source Skills root: $SourceSkillsRoot"
 Write-Step "Package root: $PackageRoot"
 
-if ($Clean) {
+if ($Clean -and -not $ManifestOnly) {
   Write-Step "Cleaning package skill payload folders"
   foreach ($name in $SkillNames) {
     $target = Join-Path $PackageRoot "skills\$name"
@@ -127,14 +130,17 @@ if ($Clean) {
   }
 }
 
-New-Item -ItemType Directory -Path (Join-Path $PackageRoot "skills") -Force | Out-Null
-
-foreach ($name in $SkillNames) {
-  $source = Join-Path $SourceSkillsRoot $name
-  $dest = Join-Path $PackageRoot "skills\$name"
-  if (Test-Path -LiteralPath $dest) { Remove-Item -LiteralPath $dest -Recurse -Force }
-  Copy-FilteredDirectory -Source $source -Destination $dest
-  Write-Step "Copied $name"
+if (-not $ManifestOnly) {
+  New-Item -ItemType Directory -Path (Join-Path $PackageRoot "skills") -Force | Out-Null
+  foreach ($name in $SkillNames) {
+    $source = Join-Path $SourceSkillsRoot $name
+    $dest = Join-Path $PackageRoot "skills\$name"
+    if (Test-Path -LiteralPath $dest) { Remove-Item -LiteralPath $dest -Recurse -Force }
+    Copy-FilteredDirectory -Source $source -Destination $dest
+    Write-Step "Copied $name"
+  }
+} else {
+  Write-Step "Manifest-only mode: preserving current skill payloads"
 }
 
 $manifest = New-Manifest -Root $PackageRoot
@@ -144,10 +150,12 @@ $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 [System.IO.File]::WriteAllText($manifestPath, $manifestJson + [Environment]::NewLine, $utf8NoBom)
 Write-Step "Wrote MANIFEST.json"
 
-if (Test-Path -LiteralPath $ZipPath) {
-  Remove-Item -LiteralPath $ZipPath -Force
+if (-not $ManifestOnly) {
+  if (Test-Path -LiteralPath $ZipPath) {
+    Remove-Item -LiteralPath $ZipPath -Force
+  }
+  Compress-Archive -Path (Join-Path $PackageRoot "*") -DestinationPath $ZipPath -Force
+  $zipItem = Get-Item -LiteralPath $ZipPath
+  Write-Step "Created zip: $ZipPath"
+  Write-Step ("Zip size: {0:N0} bytes" -f $zipItem.Length)
 }
-Compress-Archive -Path (Join-Path $PackageRoot "*") -DestinationPath $ZipPath -Force
-$zipItem = Get-Item -LiteralPath $ZipPath
-Write-Step "Created zip: $ZipPath"
-Write-Step ("Zip size: {0:N0} bytes" -f $zipItem.Length)

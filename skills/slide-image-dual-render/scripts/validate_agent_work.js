@@ -3,10 +3,10 @@ const fs = require('fs');
 const path = require('path');
 
 function usage() {
-  console.log(`Validate slide-image-dual-render parallel worker work directories.
+  console.log(`Validate slide-image-dual-render sub-agent work directories.
 
 Usage:
-  node scripts/validate_parallel_work.js [options]
+  node scripts/validate_agent_work.js [options]
 
 Options:
   --work <path>      Work directory containing slideXX folders (default: work)
@@ -83,6 +83,7 @@ function validateSlide(entry) {
   const required = [
     'measurements.json',
     'profile_override.json',
+    'icon_usage.json',
     'crop_plan.json',
     `s${n}.fragment.js`,
     'editability_inventory.md',
@@ -95,6 +96,7 @@ function validateSlide(entry) {
   const measurementsFile = path.join(dir, 'measurements.json');
   const profileFile = path.join(dir, 'profile_override.json');
   const cropFile = path.join(dir, 'crop_plan.json');
+  const iconUsageFile = path.join(dir, 'icon_usage.json');
   const fragmentFile = path.join(dir, `s${n}.fragment.js`);
 
   const measurements = fs.existsSync(measurementsFile) ? readJson(measurementsFile, issues) : null;
@@ -119,6 +121,17 @@ function validateSlide(entry) {
       if (!hasNumber(crop, key)) issues.push(`${cropFile}: ${label} missing numeric ${key}`);
     }
   });
+
+  const iconUsage = fs.existsSync(iconUsageFile) ? readJson(iconUsageFile, issues) : null;
+  if (iconUsage && (iconUsage.schemaVersion !== 'slide-image-dual-render.icon-usage.v1' || !Array.isArray(iconUsage.icons))) {
+    issues.push(`${iconUsageFile}: slide-image-dual-render.icon-usage.v1 with icons array required`);
+  } else if (iconUsage) {
+    iconUsage.icons.forEach((row, idx) => {
+      if (!row || !/^[a-z][a-z0-9]*$/.test(String(row.concept || '')) || !/^(white|lblue|cyan|red|green|gold|blue)$/.test(String(row.color || ''))) {
+        issues.push(`${iconUsageFile}: icons[${idx}] has invalid concept/color`);
+      }
+    });
+  }
 
   validateFragment(fragmentFile, n, issues);
   return issues;
@@ -167,6 +180,6 @@ function main() {
 try {
   main();
 } catch (err) {
-  console.error(`validate_parallel_work: ${err.message}`);
+  console.error(`validate_agent_work: ${err.message}`);
   process.exit(1);
 }

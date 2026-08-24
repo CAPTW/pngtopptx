@@ -37,7 +37,7 @@ runPreflightIfEnabled();
 const pptxgen = require('pptxgenjs');
 const { makePptxSurface } = require('./lib/atoms_pptx');
 const { makeHtmlSurface } = require('./lib/atoms_html');
-const { FONT, FONT_POLICY, PXW, PXH } = require('./lib/kit');
+const { FONT, FONT_POLICY, PXW, PXH, persistFontResolutionManifest, FONT_MANIFEST_PATH } = require('./lib/kit');
 const OM = require('./lib/object_manifest');
 const { loadProfile, paletteC, isLightProfile } = require('./lib/profile');
 const _P = loadProfile();
@@ -261,6 +261,8 @@ function writeBuildTrace(target, pptxOut, htmlOut) {
   const nativeManifestPath = path.join(PROJECT_ROOT, 'out', 'native_object_manifest.json');
   OM.writeNativeManifest(nativeManifestPath);
   console.log('wrote', nativeManifestPath);
+  persistFontResolutionManifest(FONT_MANIFEST_PATH);
+  console.log('wrote', FONT_MANIFEST_PATH);
   writeBuildTrace(target, pptxOut, htmlOut);
 })();
 

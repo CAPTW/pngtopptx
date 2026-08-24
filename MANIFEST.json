@@ -1,577 +1,707 @@
 {
-    "name":  "pngtopptx-toolkit",
-    "version":  "0.1.0",
-    "description":  "Local slide reconstruction toolkit for converting slide images into editable PPTX/HTML with text-layer preprocessing, validation, visual QA, and orchestration.",
-    "generatedAt":  "2026-06-28T13:28:53.2196676Z",
-    "modules":  [
-                    {
-                        "name":  "slide-text-layer-inpaint",
-                        "path":  "skills/slide-text-layer-inpaint",
-                        "role":  "text layer separation, pseudo text handling, masks, inpainting, residual cleanup"
-                    },
-                    {
-                        "name":  "slide-image-dual-render",
-                        "path":  "skills/slide-image-dual-render",
-                        "role":  "editable PPTX/HTML rendering, validation, reconstruction, PPTX openability"
-                    },
-                    {
-                        "name":  "slide-visual-polish-qa",
-                        "path":  "skills/slide-visual-polish-qa",
-                        "role":  "visual QA, screenshot/raster comparison, fix plans"
-                    },
-                    {
-                        "name":  "slide-editable-deck-orchestrator",
-                        "path":  "skills/slide-editable-deck-orchestrator",
-                        "role":  "orchestration, repair waves, delivery checks"
-                    }
-                ],
-    "supportedPlatforms":  [
-                               "Windows"
-                           ],
-    "testedPaths":  {
-                        "defaultUserSkills":  "%USERPROFILE%\\.pngtopptx\\skills"
-                    },
-    "doesNotBundle":  [
-                          "font files",
-                          "node_modules",
-                          "private input decks",
-                          "ad hoc generated outputs outside curated public examples"
-                      ],
-    "fileChecksums":  [
-                          {
-                              "path":  ".gitignore",
-                              "sha256":  "aa7691e9f7cbd0eef58e3e0b529f23fa6f98a8c60fd47e3913d69657a095968d",
-                              "bytes":  864
-                          },
-                          {
-                              "path":  ".nojekyll",
-                              "sha256":  "7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
-                              "bytes":  2
-                          },
-                          {
-                              "path":  "CHANGELOG.md",
-                              "sha256":  "b1c04f0663fbafbc15c8da87aa8de9b6d673ed19c84ddfe8e86f8eab17153dd5",
-                              "bytes":  229
-                          },
-                          {
-                              "path":  "DEPENDENCIES.md",
-                              "sha256":  "fd0ea36333358c4ad6261bcfd58d24af0f123968c7d912389434bbb516a0eab1",
-                              "bytes":  393
-                          },
-                          {
-                              "path":  "examples\\generated-cooling-loop\\comparison-contact-sheet.png",
-                              "sha256":  "ba0dbe77d277305e6fb010ae444d5708f213d4ce75471698321d3cda53019101",
-                              "bytes":  360363
-                          },
-                          {
-                              "path":  "examples\\generated-cooling-loop\\editable-reconstruction.pptx",
-                              "sha256":  "71cb38e3af31e895c45bf952ba19faf991a5904ccf04348a52f1c392c66d31a0",
-                              "bytes":  651519
-                          },
-                          {
-                              "path":  "examples\\generated-cooling-loop\\index.html",
-                              "sha256":  "76bbeca43124499a0d3f8a8bbb703c704d4a4f2346c3d300086475ea8b3a4049",
-                              "bytes":  7082
-                          },
-                          {
-                              "path":  "examples\\generated-cooling-loop\\object-summary.json",
-                              "sha256":  "8a2a7e20d5288ece16619eefb5ea68c5fae60b5a8f5aec7218d3352b3d8df9d7",
-                              "bytes":  1172
-                          },
-                          {
-                              "path":  "examples\\generated-cooling-loop\\prompt.txt",
-                              "sha256":  "fa4a12b15358ccd9f23deda029a43ffe5acb0b8d40413eb3a8e7eeb789a8de2f",
-                              "bytes":  1487
-                          },
-                          {
-                              "path":  "examples\\generated-cooling-loop\\README.md",
-                              "sha256":  "ff269c17b4947da1c4fb1ad945c3a0b532eea4ac77c029a99b3126be0a496476",
-                              "bytes":  3099
-                          },
-                          {
-                              "path":  "examples\\generated-cooling-loop\\reconstruction-slides.js",
-                              "sha256":  "89c8ffb4b7bd076b5a74870e5774137362c3bde05ed45bc103d2de077db59c7b",
-                              "bytes":  20938
-                          },
-                          {
-                              "path":  "examples\\generated-cooling-loop\\source.png",
-                              "sha256":  "834120bb64a9a6c5a6d02b3b9b1a0f075b300cf2b0436f7f1000bc5f97a20650",
-                              "bytes":  1785386
-                          },
-                          {
-                              "path":  "examples\\generated-cooling-loop\\visual-qa-summary.md",
-                              "sha256":  "88668dcc8c1b034fe4e978b0984d39e555a243c69d41cce4e2bbc617320a9f9a",
-                              "bytes":  751
-                          },
-                          {
-                              "path":  "examples\\prompt-blocking-zero.txt",
-                              "sha256":  "72b6cc47fcf4fde5696d606c82edc773e166f98c2d56bd6c182d2b60df053450",
-                              "bytes":  677
-                          },
-                          {
-                              "path":  "examples\\prompt-canary.txt",
-                              "sha256":  "f7680398bbe736004a9eee8448196b07651cac224af38a737748173345cfb726",
-                              "bytes":  510
-                          },
-                          {
-                              "path":  "examples\\prompt-orchestrator-smoke-test.txt",
-                              "sha256":  "9b2146396f0c7d0836caf3a663bfa515733cc08fa33c98d39ae7879036586f6a",
-                              "bytes":  593
-                          },
-                          {
-                              "path":  "examples\\prompt-visual-qa-only.txt",
-                              "sha256":  "d9f48f3e43894a0744667c69ad9ee599e31164d00e16a14ff9a02718d0444465",
-                              "bytes":  435
-                          },
-                          {
-                              "path":  "examples\\README.md",
-                              "sha256":  "002c19f3e8554d5491a88b4c8d65aa773a1e5599ffd9593626349c02d38669a8",
-                              "bytes":  936
-                          },
-                          {
-                              "path":  "index.html",
-                              "sha256":  "801e990747053bec3fa4391ae338b83aedc7faab021f382967cd4eee7f687e77",
-                              "bytes":  4198
-                          },
-                          {
-                              "path":  "INSTALL.md",
-                              "sha256":  "5d7e68353aa2a64bb7cb75cf34db65417fa6ecd4cfc266e8b93631b54b0363fb",
-                              "bytes":  1094
-                          },
-                          {
-                              "path":  "install.ps1",
-                              "sha256":  "b96d6b7a5a540fe1928d00eb2ad8af6f8a231e3e9a5ab7e84f363a8b9e99cda6",
-                              "bytes":  2153
-                          },
-                          {
-                              "path":  "package_skillset.ps1",
-                              "sha256":  "bfe17e0771c4479f7e073e2f980dfa64da326c79d002d181b41659c8565d5f4e",
-                              "bytes":  5911
-                          },
-                          {
-                              "path":  "QUICKSTART.md",
-                              "sha256":  "1c4944a6fc713716f277d58805e08682b25a83ce160077b4c4ef179b84e7cabd",
-                              "bytes":  764
-                          },
-                          {
-                              "path":  "README.md",
-                              "sha256":  "7ae2ae3e5045889080e7565035e1182dda6184882c661523a99b0ad9b0c6a909",
-                              "bytes":  5313
-                          },
-                          {
-                              "path":  "skills\\slide-editable-deck-orchestrator\\assets\\prompts\\final_validation_prompt.txt",
-                              "sha256":  "4fa1ac11293c0c4b0dd1fa00a02be76a195ec92d4447062a6d5c431a09011389",
-                              "bytes":  1180
-                          },
-                          {
-                              "path":  "skills\\slide-editable-deck-orchestrator\\assets\\prompts\\initial_conversion_prompt.txt",
-                              "sha256":  "c54d6426989ab556c922e33ec2375126551a7f09e28265cb4a2be21e27a468ea",
-                              "bytes":  1124
-                          },
-                          {
-                              "path":  "skills\\slide-editable-deck-orchestrator\\assets\\prompts\\repair_wave_prompt.txt",
-                              "sha256":  "6a87efd90e32336e476f794f05d6fda4acbddc1a0cfc61d33e7defe8b1832627",
-                              "bytes":  1284
-                          },
-                          {
-                              "path":  "skills\\slide-editable-deck-orchestrator\\references\\failure-policy.md",
-                              "sha256":  "a3bb260ee36153bd6d35870bb21ec331a660b4225d2025aa53e1f7d9b7c93367",
-                              "bytes":  1378
-                          },
-                          {
-                              "path":  "skills\\slide-editable-deck-orchestrator\\references\\handoff-contracts.md",
-                              "sha256":  "c9093998d3127af81ed04295b54867061a3379124cfebd1686dd4a496fe33cae",
-                              "bytes":  2550
-                          },
-                          {
-                              "path":  "skills\\slide-editable-deck-orchestrator\\references\\orchestrator-workflow.md",
-                              "sha256":  "437eb25effdb524c291599e1de744fd884f072df4b70c8b025d9638ca1d17379",
-                              "bytes":  3819
-                          },
-                          {
-                              "path":  "skills\\slide-editable-deck-orchestrator\\references\\quality-levels.md",
-                              "sha256":  "b496997cffb18a3c9fc7610cd50fc1eecedbfe93cc7693b9794f0f3524288fcb",
-                              "bytes":  1655
-                          },
-                          {
-                              "path":  "skills\\slide-editable-deck-orchestrator\\references\\repair-playbook.md",
-                              "sha256":  "028712203c6469491b1b716582ca35847eac2ebb885e40d6f001ff12df9303c0",
-                              "bytes":  2747
-                          },
-                          {
-                              "path":  "skills\\slide-editable-deck-orchestrator\\scripts\\enforce_orchestration_state.js",
-                              "sha256":  "344b58e51cc3242334c5f1d744ee1bc9b21cc6e104e4e10c98e201ba70273ecb",
-                              "bytes":  4921
-                          },
-                          {
-                              "path":  "skills\\slide-editable-deck-orchestrator\\scripts\\generate_repair_prompt.js",
-                              "sha256":  "649caa3c09aa9fe9fd71e03f1747cd2d05c574a31e925ba2b7af2626ae6d3763",
-                              "bytes":  6942
-                          },
-                          {
-                              "path":  "skills\\slide-editable-deck-orchestrator\\scripts\\make_repair_wave_plan.js",
-                              "sha256":  "446a3bca16b79a100d62115aa83ded88c8c1fae7c0288ab8c19e2e85637eacef",
-                              "bytes":  6438
-                          },
-                          {
-                              "path":  "skills\\slide-editable-deck-orchestrator\\scripts\\plan_deck_workflow.js",
-                              "sha256":  "1afdb005ee7c08eee2364413c9e3ca5657adf27e849cfcf1b54085fe042a250a",
-                              "bytes":  5688
-                          },
-                          {
-                              "path":  "skills\\slide-editable-deck-orchestrator\\scripts\\summarize_visual_backlog.js",
-                              "sha256":  "22af4b564ad7fb3ececcbeae7fdb9a97742eaeeac365b21f2be413550dfbdf5d",
-                              "bytes":  2836
-                          },
-                          {
-                              "path":  "skills\\slide-editable-deck-orchestrator\\SKILL.md",
-                              "sha256":  "e64d1cb60f50d06895180d2c27bdee5c7e9f60d1041e0033fe8743eeb9431643",
-                              "bytes":  4682
-                          },
-                          {
-                              "path":  "skills\\slide-image-dual-render\\references\\kit-api.md",
-                              "sha256":  "7b69cf281bd808db34cdfa4b628b31fffdec026225f31b94ee0b1d984fcf31a6",
-                              "bytes":  6969
-                          },
-                          {
-                              "path":  "skills\\slide-image-dual-render\\references\\pptxgenjs-gotchas.md",
-                              "sha256":  "58ff8f1c4e464960370d2ca87442a9cb73ffcb2f59b1969b9906f5578682e5a6",
-                              "bytes":  2492
-                          },
-                          {
-                              "path":  "skills\\slide-image-dual-render\\references\\qa-and-rendering.md",
-                              "sha256":  "d981547e5e0b52b157ddf4667432997415e065bd993fef1c655e20e56b7e58c6",
-                              "bytes":  7813
-                          },
-                          {
-                              "path":  "skills\\slide-image-dual-render\\references\\workflow.md",
-                              "sha256":  "63b9f61ffe3aa1c42facf8d8d29430933d3e0113ccdef50a8ab13e2d09f45cd7",
-                              "bytes":  23999
-                          },
-                          {
-                              "path":  "skills\\slide-image-dual-render\\scripts\\build.js",
-                              "sha256":  "d8db7d35bbd4ebe544909b86073300e038e57794d069fb5b8616c141f6994134",
-                              "bytes":  11595
-                          },
-                          {
-                              "path":  "skills\\slide-image-dual-render\\scripts\\classify.md",
-                              "sha256":  "338d84222f23ab4fd5f4c70ae505520c7686212834991414b0b0bfb37baac0c3",
-                              "bytes":  4112
-                          },
-                          {
-                              "path":  "skills\\slide-image-dual-render\\scripts\\enforce_contract.js",
-                              "sha256":  "be89bea74caa38415b246aa030388326ece86696fb9cc49d06a2fcb16fe8014e",
-                              "bytes":  19088
-                          },
-                          {
-                              "path":  "skills\\slide-image-dual-render\\scripts\\enforce_qa.js",
-                              "sha256":  "0f3c41ba0b35752d10e45297773d1550ad3c7a4f9a0e0e6a2ef86dcf3793e970",
-                              "bytes":  8673
-                          },
-                          {
-                              "path":  "skills\\slide-image-dual-render\\scripts\\enforce_reconstruction.js",
-                              "sha256":  "7bcb8bc1c7086dd3aa2fa9279965ba15189e0d1bc591f42ed5c0066147d93633",
-                              "bytes":  21142
-                          },
-                          {
-                              "path":  "skills\\slide-image-dual-render\\scripts\\final_gate.js",
-                              "sha256":  "ca9822f880550f7c6bed0dfd99c6a8d058306c7e62759de4d39f59e17719d340",
-                              "bytes":  24811
-                          },
-                          {
-                              "path":  "skills\\slide-image-dual-render\\scripts\\generate_evidence.js",
-                              "sha256":  "8350d0ac4680790b838fad66401015af1e74a1afff658bc4bfa5b6481c1cbbc5",
-                              "bytes":  9805
-                          },
-                          {
-                              "path":  "skills\\slide-image-dual-render\\scripts\\integrate_parallel_work.js",
-                              "sha256":  "d347ee5c7680e616d55e30be526dd731462f7dbe3c8d5cd08ec473bdeadf98e6",
-                              "bytes":  7122
-                          },
-                          {
-                              "path":  "skills\\slide-image-dual-render\\scripts\\lib\\atoms_html.js",
-                              "sha256":  "d409937790ed89ff66cca7ab665508174dc328c76434a70e4ff1cf179305a410",
-                              "bytes":  6805
-                          },
-                          {
-                              "path":  "skills\\slide-image-dual-render\\scripts\\lib\\atoms_pptx.js",
-                              "sha256":  "ce79c7ca4f567d9268106e67231872edd109b659510fb690e33150b3a6703e3e",
-                              "bytes":  3872
-                          },
-                          {
-                              "path":  "skills\\slide-image-dual-render\\scripts\\lib\\kit.js",
-                              "sha256":  "964f17c5fa8caf118387f6960da7be5f63c660f4adcc5ab885d73d315bf87885",
-                              "bytes":  8677
-                          },
-                          {
-                              "path":  "skills\\slide-image-dual-render\\scripts\\lib\\object_manifest.js",
-                              "sha256":  "39044319cf4b3f3353f86f401b9c7bfff5f8f14e9403f4376d3d088ac79bfa10",
-                              "bytes":  4197
-                          },
-                          {
-                              "path":  "skills\\slide-image-dual-render\\scripts\\lib\\profile.js",
-                              "sha256":  "28ab77fd72342a2e865dff831b57f05cc36010387ce29af5e2698d0fbe8cb10c",
-                              "bytes":  11684
-                          },
-                          {
-                              "path":  "skills\\slide-image-dual-render\\scripts\\lib\\slides.template.js",
-                              "sha256":  "24c963c07346c64e0d48575b223415dd965b9aafbd90fea9e655e5544ba4be39",
-                              "bytes":  5606
-                          },
-                          {
-                              "path":  "skills\\slide-image-dual-render\\scripts\\make_bg.py",
-                              "sha256":  "16a458f1afe2bb827baeedf24fabfabb31152b2b47b9651b38bfa6a6c38f0b52",
-                              "bytes":  3418
-                          },
-                          {
-                              "path":  "skills\\slide-image-dual-render\\scripts\\make_crops.py",
-                              "sha256":  "06aac3287e90da124fd1c49d79bed36045d99bcb3e9c69d7eb975d6cb49bfa0a",
-                              "bytes":  13090
-                          },
-                          {
-                              "path":  "skills\\slide-image-dual-render\\scripts\\make_icons.js",
-                              "sha256":  "6169fdc4f5fa632d76256d7dc1157e929b21ad029caf22a4347ac8d668a08aaa",
-                              "bytes":  3750
-                          },
-                          {
-                              "path":  "skills\\slide-image-dual-render\\scripts\\merge_fragments.js",
-                              "sha256":  "76b461f7b16c97e013a384db3c3d42a7d0615dada8010229d8f2dadaa98c219a",
-                              "bytes":  6121
-                          },
-                          {
-                              "path":  "skills\\slide-image-dual-render\\scripts\\preview.js",
-                              "sha256":  "77b2aa78ec12ef894ef5a1dd82ca9d2e8d50be0733e61abae14a74017aefe7c0",
-                              "bytes":  11578
-                          },
-                          {
-                              "path":  "skills\\slide-image-dual-render\\scripts\\slide_pipeline.js",
-                              "sha256":  "d391ea29085b3e70948702dd492972502bb5703e29d5387d62b8d326331c1655",
-                              "bytes":  27068
-                          },
-                          {
-                              "path":  "skills\\slide-image-dual-render\\scripts\\test_crop_metadata_roundtrip.py",
-                              "sha256":  "ed9bbf9e4a67e6aa189994208fbec0dd50a6e6f42fb4a07ebd103a82de03ae91",
-                              "bytes":  6429
-                          },
-                          {
-                              "path":  "skills\\slide-image-dual-render\\scripts\\test_html_qa_static_mode.js",
-                              "sha256":  "555999177ba0d9f97e0336db1b9ca15e5ec01e86d4098ee4d4052334de1be4a1",
-                              "bytes":  3514
-                          },
-                          {
-                              "path":  "skills\\slide-image-dual-render\\scripts\\test_pptx_html_parity_helpers.js",
-                              "sha256":  "40a2710b2fa93ecd46901785dcb9e244b10227b057f6c7f1ba8a230c51b26f0f",
-                              "bytes":  2412
-                          },
-                          {
-                              "path":  "skills\\slide-image-dual-render\\scripts\\validate_parallel_work.js",
-                              "sha256":  "232b0354cbc45b1e4ba1236fcdf3c9b64d391f3d21bb6936c61778d7c688aebb",
-                              "bytes":  5648
-                          },
-                          {
-                              "path":  "skills\\slide-image-dual-render\\scripts\\validate_pptx_package.py",
-                              "sha256":  "adb9a12a9bff2e589d3f6828d611323880fe8c0be3387124a7920361f23b550e",
-                              "bytes":  12972
-                          },
-                          {
-                              "path":  "skills\\slide-image-dual-render\\SKILL.md",
-                              "sha256":  "8b1e62f2a25d654053856ddbdf16a5060008ec3242dd1c62bac803f8c1e67a0c",
-                              "bytes":  3234
-                          },
-                          {
-                              "path":  "skills\\slide-image-dual-render\\styles\\_schema.md",
-                              "sha256":  "6f426beb679823215e47d3f22a284ce48a3161cd89323bb8785b513f2ade3733",
-                              "bytes":  3350
-                          },
-                          {
-                              "path":  "skills\\slide-image-dual-render\\styles\\clinical-dark.json",
-                              "sha256":  "083eac9c1b630ec6242ee4b7df7bb528d0b0d50b9bc596ef111adbf6d6a3599a",
-                              "bytes":  2364
-                          },
-                          {
-                              "path":  "skills\\slide-image-dual-render\\styles\\corporate-light.json",
-                              "sha256":  "616008752477c3a1b30bb9f7a5569410f6b745c633c435ce67c4bf12cb821932",
-                              "bytes":  2348
-                          },
-                          {
-                              "path":  "skills\\slide-text-layer-inpaint\\references\\handoff-to-slide-image-dual-render.md",
-                              "sha256":  "ddd5bd0013121705eba13823d48131339494ac86d8527734959a4eee811d1d46",
-                              "bytes":  4006
-                          },
-                          {
-                              "path":  "skills\\slide-text-layer-inpaint\\references\\inpainting-policy.md",
-                              "sha256":  "b8ba65dd2c9efa0380eb9b1be239cd2c692d19ea038a74b1723d3dfa16edeff6",
-                              "bytes":  4479
-                          },
-                          {
-                              "path":  "skills\\slide-text-layer-inpaint\\references\\pseudo-text-policy.md",
-                              "sha256":  "762d87a10a0721ddc9d0f0013d45275b9f743cea97591696e7f8264e1517bdd5",
-                              "bytes":  3178
-                          },
-                          {
-                              "path":  "skills\\slide-text-layer-inpaint\\references\\text-region-schema.md",
-                              "sha256":  "75a8e313a7f8c68e3b176efdadb69d9bd85684ffbd09ae934322649502fecd88",
-                              "bytes":  7756
-                          },
-                          {
-                              "path":  "skills\\slide-text-layer-inpaint\\scripts\\classify_background_regions.py",
-                              "sha256":  "1d40ae589f7a2a5e98c21e9215946fdc944d6587f46ed576096cb862166961b6",
-                              "bytes":  8757
-                          },
-                          {
-                              "path":  "skills\\slide-text-layer-inpaint\\scripts\\detect_residual_text.py",
-                              "sha256":  "e53c5b6b76492f3c483ea933ebb0798b997d66de3c572fe37f0f0a33c23c6c9f",
-                              "bytes":  7314
-                          },
-                          {
-                              "path":  "skills\\slide-text-layer-inpaint\\scripts\\detect_text_regions.py",
-                              "sha256":  "2adcf7b06160d2bb464c5c9810d8046c2eaeaa352e10fd3dd5204b344867d862",
-                              "bytes":  12956
-                          },
-                          {
-                              "path":  "skills\\slide-text-layer-inpaint\\scripts\\enforce_text_layer.js",
-                              "sha256":  "0cd21538fa23798f2d700105bef32caf96bd33bbcbef893a6e2001248437d726",
-                              "bytes":  23155
-                          },
-                          {
-                              "path":  "skills\\slide-text-layer-inpaint\\scripts\\inpaint_text_regions.py",
-                              "sha256":  "ad40e94e9fac7d2ee7f611d819eefd68116da698aa7234abe7240580274ff1bc",
-                              "bytes":  11874
-                          },
-                          {
-                              "path":  "skills\\slide-text-layer-inpaint\\scripts\\make_text_masks.py",
-                              "sha256":  "eba19a92becefedb7a70aef37efb1b79c44dbb20c974a993a95426f81ba32095",
-                              "bytes":  13652
-                          },
-                          {
-                              "path":  "skills\\slide-text-layer-inpaint\\scripts\\repair_text_backgrounds.py",
-                              "sha256":  "6d120adc97ebed09704d87fd2cb3077f48e0bd0496bc094a04bb8f58d1629264",
-                              "bytes":  12763
-                          },
-                          {
-                              "path":  "skills\\slide-text-layer-inpaint\\SKILL.md",
-                              "sha256":  "16908c4d9c4c79c55fa2dc05c3be737882e21635b695a1cfd072362c0a38db55",
-                              "bytes":  8631
-                          },
-                          {
-                              "path":  "skills\\slide-visual-polish-qa\\assets\\calibration\\default-visual-qa-profile.json",
-                              "sha256":  "81d18b3b01640183cef6edf274abba3e6026991ceabbfab935555b4a6deb3e10",
-                              "bytes":  3105
-                          },
-                          {
-                              "path":  "skills\\slide-visual-polish-qa\\references\\handoff-to-slide-image-dual-render.md",
-                              "sha256":  "b27e09f529854be1efb06d5c86e0ac29a8ed1fab8fd8a42fe26dadcc0b34dee5",
-                              "bytes":  1158
-                          },
-                          {
-                              "path":  "skills\\slide-visual-polish-qa\\references\\metric-policy.md",
-                              "sha256":  "8a251ef34fca722deb8d4e989d3f5f84ac436afccfee5370425a4dacb7738d27",
-                              "bytes":  3488
-                          },
-                          {
-                              "path":  "skills\\slide-visual-polish-qa\\references\\polish-fix-plan-schema.md",
-                              "sha256":  "df231d952f5f6a55f7eda86e004a237c8b45d8b3c67bde5b60f04417c066e847",
-                              "bytes":  4106
-                          },
-                          {
-                              "path":  "skills\\slide-visual-polish-qa\\references\\screenshot-raster-policy.md",
-                              "sha256":  "1ce67a9bf666296548da7472125ef7b1f6871db97b843aa948253241ba34b421",
-                              "bytes":  3106
-                          },
-                          {
-                              "path":  "skills\\slide-visual-polish-qa\\references\\threshold-calibration.md",
-                              "sha256":  "9ad12ca148043b8320ab90c92ba6017be3e63d00bc4a32c2bedd141334bda306",
-                              "bytes":  7089
-                          },
-                          {
-                              "path":  "skills\\slide-visual-polish-qa\\references\\visual-qa-workflow.md",
-                              "sha256":  "814c13c2b26f8bd1c2c0ac373a30d12f5bf742a822e680d736aecb719a503f4e",
-                              "bytes":  3173
-                          },
-                          {
-                              "path":  "skills\\slide-visual-polish-qa\\scripts\\capture_html_screenshot.py",
-                              "sha256":  "e6afcee31cbfd024255408334b7ccdafb083760364d855da46c030f94768c1ff",
-                              "bytes":  23833
-                          },
-                          {
-                              "path":  "skills\\slide-visual-polish-qa\\scripts\\compare_slide_images.py",
-                              "sha256":  "3712ba52699219dcb5ebf5368d32e5951918b55fd88bcd9fd3b15d328a546dd7",
-                              "bytes":  64644
-                          },
-                          {
-                              "path":  "skills\\slide-visual-polish-qa\\scripts\\enforce_visual_qa.js",
-                              "sha256":  "8707df0546e51ba0886cdc1eb3eddc13b95773045c7ae77870160635069687d4",
-                              "bytes":  10687
-                          },
-                          {
-                              "path":  "skills\\slide-visual-polish-qa\\scripts\\generate_visual_qa_summary.js",
-                              "sha256":  "a7dd7e8cdd98e1d12e6d9a8105e1e39de2abc8d3255469291b7c4291db543e56",
-                              "bytes":  9244
-                          },
-                          {
-                              "path":  "skills\\slide-visual-polish-qa\\scripts\\rasterize_pptx.py",
-                              "sha256":  "6a9163d34f190ca04ca0ed11a06a8166fd501d0fef0fcedd23e4d413b8e76b83",
-                              "bytes":  17988
-                          },
-                          {
-                              "path":  "skills\\slide-visual-polish-qa\\scripts\\slide_mapping.py",
-                              "sha256":  "1ad4d0b85a47b34161600b59128df71e9efb47809460c2f7aeb75e072016c22b",
-                              "bytes":  10923
-                          },
-                          {
-                              "path":  "skills\\slide-visual-polish-qa\\scripts\\test_html_capture_not_flat.py",
-                              "sha256":  "311d1e98bb6074afc1cf119702c21ceaf158c74c6a076c8dcc4dfea765957370",
-                              "bytes":  6463
-                          },
-                          {
-                              "path":  "skills\\slide-visual-polish-qa\\scripts\\test_visual_qa_calibration.py",
-                              "sha256":  "7429aa55d112902d0a50d552aa509ec68354d1a6d6add789ba1bb9c2b03dbf11",
-                              "bytes":  7802
-                          },
-                          {
-                              "path":  "skills\\slide-visual-polish-qa\\scripts\\test_wave_slide_mapping.py",
-                              "sha256":  "da68a86cef175baae64c0dbb0179b14afc2cfbc03b404df20dabed24c5dc71a3",
-                              "bytes":  4858
-                          },
-                          {
-                              "path":  "skills\\slide-visual-polish-qa\\SKILL.md",
-                              "sha256":  "c1e1960f4ccae33a636514392572029713e988c5e9c02140dd743269a13f5366",
-                              "bytes":  6620
-                          },
-                          {
-                              "path":  "tests\\smoke-test-manifest.json",
-                              "sha256":  "e3b19086029a3fb9abc717b94aec96f7154be77084586b055ac102ad75d7a6b8",
-                              "bytes":  348
-                          },
-                          {
-                              "path":  "tests\\verify_python_scripts.py",
-                              "sha256":  "9c9525144f923bce894c5dac008fb241f66f3bebfa0153e23f22f28a097091d9",
-                              "bytes":  964
-                          },
-                          {
-                              "path":  "tests\\verify_skillset_layout.js",
-                              "sha256":  "c5dbb8aa37ae0d74d9f52b2d62d01a7849d7b74aec86c1f034c1b205e25bff35",
-                              "bytes":  2741
-                          },
-                          {
-                              "path":  "uninstall.ps1",
-                              "sha256":  "9246a0ed0ea6351a35aae26d57546bc85b0d93450d8b900eefee6d6a01cf78da",
-                              "bytes":  1219
-                          },
-                          {
-                              "path":  "VERIFY.md",
-                              "sha256":  "1eb863e67fd08500b40d8288f0cf08a6bc99dd35a825d742f7bc3536c7446963",
-                              "bytes":  732
-                          },
-                          {
-                              "path":  "verify_install.ps1",
-                              "sha256":  "ab041890e1dbb80ad8468f6a68bcfb9b1e821a9e7a0262f0e5b2a1f6f66d15f5",
-                              "bytes":  5859
-                          },
-                          {
-                              "path":  "VERSION",
-                              "sha256":  "789db4c1e7a3d8f91b9df3007e7cb0a9a8883828076efe93c19ca3fc363874b7",
-                              "bytes":  9
-                          }
-                      ]
+  "name": "pngtopptx-toolkit",
+  "version": "0.2.0",
+  "description": "Local slide reconstruction toolkit for converting slide images into editable PPTX/HTML with text-layer preprocessing, validation, visual QA, and orchestration.",
+  "generatedAt": "2026-08-24T10:34:01.9877310Z",
+  "modules": [
+    {
+      "name": "slide-text-layer-inpaint",
+      "path": "skills/slide-text-layer-inpaint",
+      "role": "text layer separation, pseudo text handling, masks, inpainting, residual cleanup"
+    },
+    {
+      "name": "slide-image-dual-render",
+      "path": "skills/slide-image-dual-render",
+      "role": "editable PPTX/HTML rendering, hardlock, reconstruction, PPTX openability"
+    },
+    {
+      "name": "slide-visual-polish-qa",
+      "path": "skills/slide-visual-polish-qa",
+      "role": "visual QA, screenshot/raster comparison, fix plans"
+    },
+    {
+      "name": "slide-editable-deck-orchestrator",
+      "path": "skills/slide-editable-deck-orchestrator",
+      "role": "meta orchestration, repair waves, blocking-zero delivery"
+    }
+  ],
+  "supportedPlatforms": [
+    "Windows"
+  ],
+  "testedPaths": {
+    "defaultUserSkills": "%USERPROFILE%\\.pngtopptx\\skills"
+  },
+  "doesNotBundle": [
+    "font files",
+    "node_modules",
+    "private input decks",
+    "ad hoc generated outputs outside curated public examples"
+  ],
+  "fileChecksums": [
+    {
+      "path": ".gitignore",
+      "sha256": "aa7691e9f7cbd0eef58e3e0b529f23fa6f98a8c60fd47e3913d69657a095968d",
+      "bytes": 864
+    },
+    {
+      "path": ".nojekyll",
+      "sha256": "7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
+      "bytes": 2
+    },
+    {
+      "path": ".pytest_cache\\.gitignore",
+      "sha256": "e7c6bb30148cf667606dcd63e7ca77acaa3cfb0c8303bf09e6419e1e1669dc6d",
+      "bytes": 39
+    },
+    {
+      "path": ".pytest_cache\\CACHEDIR.TAG",
+      "sha256": "37dc88ef9a0abeddbe81053a6dd8fdfb13afb613045ea1eb4a5c815a74a3bde4",
+      "bytes": 191
+    },
+    {
+      "path": ".pytest_cache\\README.md",
+      "sha256": "420e808d79a6c25d3cda0af33bc4782314a14949866682c68ce8149e89b66b70",
+      "bytes": 310
+    },
+    {
+      "path": ".pytest_cache\\v\\cache\\nodeids",
+      "sha256": "2112c1e006c4d2da5fff3363b75ada0072ece8b13384bfff760f6a1f36a8b5cf",
+      "bytes": 1898
+    },
+    {
+      "path": "CHANGELOG.md",
+      "sha256": "f147a39b31412570f089fc0d27d4a8ae94623b56206fdf7d964339e0acb2a341",
+      "bytes": 866
+    },
+    {
+      "path": "DEPENDENCIES.md",
+      "sha256": "fbeb7f7574b1b322c4b5eeb94f2dc81e49afd6c37d03d6da98e8af5fd46f84af",
+      "bytes": 410
+    },
+    {
+      "path": "examples\\generated-cooling-loop\\comparison-contact-sheet.png",
+      "sha256": "ba0dbe77d277305e6fb010ae444d5708f213d4ce75471698321d3cda53019101",
+      "bytes": 360363
+    },
+    {
+      "path": "examples\\generated-cooling-loop\\editable-reconstruction.pptx",
+      "sha256": "71cb38e3af31e895c45bf952ba19faf991a5904ccf04348a52f1c392c66d31a0",
+      "bytes": 651519
+    },
+    {
+      "path": "examples\\generated-cooling-loop\\index.html",
+      "sha256": "76bbeca43124499a0d3f8a8bbb703c704d4a4f2346c3d300086475ea8b3a4049",
+      "bytes": 7082
+    },
+    {
+      "path": "examples\\generated-cooling-loop\\object-summary.json",
+      "sha256": "8a2a7e20d5288ece16619eefb5ea68c5fae60b5a8f5aec7218d3352b3d8df9d7",
+      "bytes": 1172
+    },
+    {
+      "path": "examples\\generated-cooling-loop\\prompt.txt",
+      "sha256": "fa4a12b15358ccd9f23deda029a43ffe5acb0b8d40413eb3a8e7eeb789a8de2f",
+      "bytes": 1487
+    },
+    {
+      "path": "examples\\generated-cooling-loop\\README.md",
+      "sha256": "ff269c17b4947da1c4fb1ad945c3a0b532eea4ac77c029a99b3126be0a496476",
+      "bytes": 3099
+    },
+    {
+      "path": "examples\\generated-cooling-loop\\reconstruction-slides.js",
+      "sha256": "89c8ffb4b7bd076b5a74870e5774137362c3bde05ed45bc103d2de077db59c7b",
+      "bytes": 20938
+    },
+    {
+      "path": "examples\\generated-cooling-loop\\source.png",
+      "sha256": "834120bb64a9a6c5a6d02b3b9b1a0f075b300cf2b0436f7f1000bc5f97a20650",
+      "bytes": 1785386
+    },
+    {
+      "path": "examples\\generated-cooling-loop\\visual-qa-summary.md",
+      "sha256": "88668dcc8c1b034fe4e978b0984d39e555a243c69d41cce4e2bbc617320a9f9a",
+      "bytes": 751
+    },
+    {
+      "path": "examples\\prompt-blocking-zero.txt",
+      "sha256": "72b6cc47fcf4fde5696d606c82edc773e166f98c2d56bd6c182d2b60df053450",
+      "bytes": 677
+    },
+    {
+      "path": "examples\\prompt-canary.txt",
+      "sha256": "f7680398bbe736004a9eee8448196b07651cac224af38a737748173345cfb726",
+      "bytes": 510
+    },
+    {
+      "path": "examples\\prompt-orchestrator-smoke-test.txt",
+      "sha256": "9b2146396f0c7d0836caf3a663bfa515733cc08fa33c98d39ae7879036586f6a",
+      "bytes": 593
+    },
+    {
+      "path": "examples\\prompt-visual-qa-only.txt",
+      "sha256": "d9f48f3e43894a0744667c69ad9ee599e31164d00e16a14ff9a02718d0444465",
+      "bytes": 435
+    },
+    {
+      "path": "examples\\README.md",
+      "sha256": "002c19f3e8554d5491a88b4c8d65aa773a1e5599ffd9593626349c02d38669a8",
+      "bytes": 936
+    },
+    {
+      "path": "index.html",
+      "sha256": "801e990747053bec3fa4391ae338b83aedc7faab021f382967cd4eee7f687e77",
+      "bytes": 4198
+    },
+    {
+      "path": "INSTALL.md",
+      "sha256": "5a583b5c29115de5d44be5f6fa1470699fc5eebe2e1561f6f6d4083d972b0836",
+      "bytes": 1142
+    },
+    {
+      "path": "install.ps1",
+      "sha256": "151690557cb4ce0e6191a6404f19d5ca9bc41028010c22b86601586ca3b718d6",
+      "bytes": 2167
+    },
+    {
+      "path": "LICENSE",
+      "sha256": "d3415a6972a00358656c3e27c34a55d26886a2dd08c83dd13197cb2775c1c5a0",
+      "bytes": 440
+    },
+    {
+      "path": "package_skillset.ps1",
+      "sha256": "2a03e2a887fbc4bba3f2cba0cb37a10c9ae6d087f00b5e59c663b299cc651a19",
+      "bytes": 6301
+    },
+    {
+      "path": "QUICKSTART.md",
+      "sha256": "c40e2df4c1827628543f8be9c210b852b4b519e6f587b22a2cb89c63fe8d6e6e",
+      "bytes": 794
+    },
+    {
+      "path": "README.md",
+      "sha256": "b227a598e845c2f2b3daa89ca860b9266fdcaa1bc0dd98398126048f24c5cbdc",
+      "bytes": 6550
+    },
+    {
+      "path": "skills\\slide-editable-deck-orchestrator\\assets\\prompts\\final_validation_prompt.txt",
+      "sha256": "4fa1ac11293c0c4b0dd1fa00a02be76a195ec92d4447062a6d5c431a09011389",
+      "bytes": 1180
+    },
+    {
+      "path": "skills\\slide-editable-deck-orchestrator\\assets\\prompts\\initial_conversion_prompt.txt",
+      "sha256": "c54d6426989ab556c922e33ec2375126551a7f09e28265cb4a2be21e27a468ea",
+      "bytes": 1124
+    },
+    {
+      "path": "skills\\slide-editable-deck-orchestrator\\assets\\prompts\\repair_wave_prompt.txt",
+      "sha256": "6a87efd90e32336e476f794f05d6fda4acbddc1a0cfc61d33e7defe8b1832627",
+      "bytes": 1284
+    },
+    {
+      "path": "skills\\slide-editable-deck-orchestrator\\references\\failure-policy.md",
+      "sha256": "a3bb260ee36153bd6d35870bb21ec331a660b4225d2025aa53e1f7d9b7c93367",
+      "bytes": 1378
+    },
+    {
+      "path": "skills\\slide-editable-deck-orchestrator\\references\\handoff-contracts.md",
+      "sha256": "c9093998d3127af81ed04295b54867061a3379124cfebd1686dd4a496fe33cae",
+      "bytes": 2550
+    },
+    {
+      "path": "skills\\slide-editable-deck-orchestrator\\references\\orchestrator-workflow.md",
+      "sha256": "437eb25effdb524c291599e1de744fd884f072df4b70c8b025d9638ca1d17379",
+      "bytes": 3819
+    },
+    {
+      "path": "skills\\slide-editable-deck-orchestrator\\references\\quality-levels.md",
+      "sha256": "b496997cffb18a3c9fc7610cd50fc1eecedbfe93cc7693b9794f0f3524288fcb",
+      "bytes": 1655
+    },
+    {
+      "path": "skills\\slide-editable-deck-orchestrator\\references\\repair-playbook.md",
+      "sha256": "028712203c6469491b1b716582ca35847eac2ebb885e40d6f001ff12df9303c0",
+      "bytes": 2747
+    },
+    {
+      "path": "skills\\slide-editable-deck-orchestrator\\scripts\\enforce_orchestration_state.js",
+      "sha256": "344b58e51cc3242334c5f1d744ee1bc9b21cc6e104e4e10c98e201ba70273ecb",
+      "bytes": 4921
+    },
+    {
+      "path": "skills\\slide-editable-deck-orchestrator\\scripts\\generate_repair_prompt.js",
+      "sha256": "649caa3c09aa9fe9fd71e03f1747cd2d05c574a31e925ba2b7af2626ae6d3763",
+      "bytes": 6942
+    },
+    {
+      "path": "skills\\slide-editable-deck-orchestrator\\scripts\\make_repair_wave_plan.js",
+      "sha256": "446a3bca16b79a100d62115aa83ded88c8c1fae7c0288ab8c19e2e85637eacef",
+      "bytes": 6438
+    },
+    {
+      "path": "skills\\slide-editable-deck-orchestrator\\scripts\\plan_deck_workflow.js",
+      "sha256": "1afdb005ee7c08eee2364413c9e3ca5657adf27e849cfcf1b54085fe042a250a",
+      "bytes": 5688
+    },
+    {
+      "path": "skills\\slide-editable-deck-orchestrator\\scripts\\summarize_visual_backlog.js",
+      "sha256": "22af4b564ad7fb3ececcbeae7fdb9a97742eaeeac365b21f2be413550dfbdf5d",
+      "bytes": 2836
+    },
+    {
+      "path": "skills\\slide-editable-deck-orchestrator\\SKILL.md",
+      "sha256": "e64d1cb60f50d06895180d2c27bdee5c7e9f60d1041e0033fe8743eeb9431643",
+      "bytes": 4682
+    },
+    {
+      "path": "skills\\slide-image-dual-render\\agents\\openai.yaml",
+      "sha256": "46b08a2179eade4372baf3627b68df18ce8205ef210d4041b620b5dee0ce4073",
+      "bytes": 541
+    },
+    {
+      "path": "skills\\slide-image-dual-render\\assets\\codex-agents\\slide-profile-mapper.toml",
+      "sha256": "95dc0e184d7c2976759a1dfc65493f66e5db8b164c301c4068560dab7e29345d",
+      "bytes": 1447
+    },
+    {
+      "path": "skills\\slide-image-dual-render\\assets\\codex-agents\\slide-qa-gate.toml",
+      "sha256": "d7d46e22647b51f27816669e9c9d808f6fdacbb3be3de513b76abc3cf20dc7fb",
+      "bytes": 1177
+    },
+    {
+      "path": "skills\\slide-image-dual-render\\assets\\codex-agents\\slide-reconstruct-worker.toml",
+      "sha256": "a66dbb27f1314e41ae2cb0ff4bc7040e19672f7f2cc6b408e19507f4ea5b3949",
+      "bytes": 1434
+    },
+    {
+      "path": "skills\\slide-image-dual-render\\assets\\codex-agents\\slide-render-integrator.toml",
+      "sha256": "800bea39bb30b3fc9d5888585026c0fef20871da23e7acbd32cc6de9e4fd67d4",
+      "bytes": 1377
+    },
+    {
+      "path": "skills\\slide-image-dual-render\\assets\\codex-hardlock\\AGENTS.md",
+      "sha256": "09e972f94d96937acef4b213c6aecb23535e4125ceb8dc0944694c657709b8e4",
+      "bytes": 9020
+    },
+    {
+      "path": "skills\\slide-image-dual-render\\assets\\codex-hardlock\\config.toml.example",
+      "sha256": "bb39745ac775e7f86a9d5af25f4ae9b81c76965ea39fa0c4dc662b4907a1ec40",
+      "bytes": 1394
+    },
+    {
+      "path": "skills\\slide-image-dual-render\\assets\\codex-hardlock\\hooks\\slide_post_tool_use_review.py",
+      "sha256": "bb958c0f079aa848267ba39647961dd8fda7257cffa3ae2926b8e5cb8d0e8a08",
+      "bytes": 1425
+    },
+    {
+      "path": "skills\\slide-image-dual-render\\assets\\codex-hardlock\\hooks\\slide_pre_tool_use_policy.py",
+      "sha256": "edc7bc00b52686f5980e5fc0ce8031164a44faf3ad2f35a6b64780846cccbe22",
+      "bytes": 4071
+    },
+    {
+      "path": "skills\\slide-image-dual-render\\assets\\codex-hardlock\\rules\\slide.rules",
+      "sha256": "ae071ad09bd0c1665cb7dcc1c2f01166b34cc6c5114035c58aee15df9e308ed0",
+      "bytes": 703
+    },
+    {
+      "path": "skills\\slide-image-dual-render\\references\\codex-subagents.md",
+      "sha256": "41997175b046dc327cfed00b5b51fb1d81427355a0ebbb1e52a6801c5967e037",
+      "bytes": 18315
+    },
+    {
+      "path": "skills\\slide-image-dual-render\\references\\hardlock-mode.md",
+      "sha256": "1c94f88d7eae9687b15e8941e4189c2a3eebbb718d148df00e51970291f26c89",
+      "bytes": 16703
+    },
+    {
+      "path": "skills\\slide-image-dual-render\\references\\kit-api.md",
+      "sha256": "128a1a571881c0c223f6c09821f3ce5770947b20b1532574a687e99a3b2e0a8c",
+      "bytes": 6862
+    },
+    {
+      "path": "skills\\slide-image-dual-render\\references\\pptxgenjs-gotchas.md",
+      "sha256": "a30a8e5d5e390b09f6771d3be251c87ade8f76987ccd5b04bd1b25b28ab87631",
+      "bytes": 2453
+    },
+    {
+      "path": "skills\\slide-image-dual-render\\references\\qa-and-rendering.md",
+      "sha256": "8b61d7e75afdae267bdc94faf18eedcf6ee6a946dfd43372abf333a624d63b59",
+      "bytes": 7619
+    },
+    {
+      "path": "skills\\slide-image-dual-render\\references\\style-integration.md",
+      "sha256": "e528f8f05405fed97c86f8bc3649bd396d0eb91b152333f849b97051a4b63f54",
+      "bytes": 6442
+    },
+    {
+      "path": "skills\\slide-image-dual-render\\references\\workflow.md",
+      "sha256": "ecd1b378de72f1a67c1368f2eb48d1ca2b8e541844515b67e076158f2bdedbc6",
+      "bytes": 24265
+    },
+    {
+      "path": "skills\\slide-image-dual-render\\scripts\\build.js",
+      "sha256": "6e902bbc6bcc3d8ee99529499f19dd0d3b04f04d55f76bad5849f8a6aa73f809",
+      "bytes": 11477
+    },
+    {
+      "path": "skills\\slide-image-dual-render\\scripts\\classify.md",
+      "sha256": "e47ecca2ee0da053f469268c79bbec89981f24c62fd35b8ea4915516d4977223",
+      "bytes": 4007
+    },
+    {
+      "path": "skills\\slide-image-dual-render\\scripts\\enforce_contract.js",
+      "sha256": "623db3c2d5eb23ce4499a61fd58c8f837a8abd2aa9a9b976430e1f2d09df5909",
+      "bytes": 23388
+    },
+    {
+      "path": "skills\\slide-image-dual-render\\scripts\\enforce_qa.js",
+      "sha256": "a06cf1e81a1e5487df9d88e94bfcbfb165d3c3a6d16be1cddb61f8c41b8c864b",
+      "bytes": 8513
+    },
+    {
+      "path": "skills\\slide-image-dual-render\\scripts\\enforce_reconstruction.js",
+      "sha256": "e82b35b76b1d4e0bf3b470b11e8a92d5b4b3e3b50d57dbf8be778aaa4a2083da",
+      "bytes": 20815
+    },
+    {
+      "path": "skills\\slide-image-dual-render\\scripts\\final_gate.js",
+      "sha256": "385766c78d08219fd3e5ad2d23b8b6f6b0effdd51a2408e5152c14b120aac456",
+      "bytes": 24667
+    },
+    {
+      "path": "skills\\slide-image-dual-render\\scripts\\font_preflight.js",
+      "sha256": "4b931fcc4fd3113fce6816bfc65132b2cab4fc9942401d587d0d3168e897cbb6",
+      "bytes": 9372
+    },
+    {
+      "path": "skills\\slide-image-dual-render\\scripts\\generate_evidence.js",
+      "sha256": "77989dfa91d1dac9e944ebdc52b726af8bc67a294375e19210508b8b315e272e",
+      "bytes": 9594
+    },
+    {
+      "path": "skills\\slide-image-dual-render\\scripts\\install_codex_subagents.js",
+      "sha256": "af2c3227c2af42c4639588adbff01aacd0645c722af9fd8c6494c7cd48f6422b",
+      "bytes": 3254
+    },
+    {
+      "path": "skills\\slide-image-dual-render\\scripts\\install_hardlock.js",
+      "sha256": "dfa1a7c527dc86b0ae552d39055b4cc92e1e68af4103fdadecadbbb27e40d9d4",
+      "bytes": 3526
+    },
+    {
+      "path": "skills\\slide-image-dual-render\\scripts\\integrate_subagent_work.js",
+      "sha256": "5036d93422803016c6fa3cc99af21953c4bf103fd35770a9018afbbecbeb4094",
+      "bytes": 8588
+    },
+    {
+      "path": "skills\\slide-image-dual-render\\scripts\\lib\\atoms_html.js",
+      "sha256": "7fc9bf09b723b350ba5bf4dbc21c9e698bae3ef0f252d76c7362098e9d2d240a",
+      "bytes": 7440
+    },
+    {
+      "path": "skills\\slide-image-dual-render\\scripts\\lib\\atoms_pptx.js",
+      "sha256": "1ea06654f46f0a3aae51e235e48b9753a09cf0193d41037f3c911a0b1c6c969a",
+      "bytes": 4259
+    },
+    {
+      "path": "skills\\slide-image-dual-render\\scripts\\lib\\kit.js",
+      "sha256": "861b287df0247a566173b53ee5fed0a9ed509589acee998bc23c4d046b15fcf9",
+      "bytes": 11893
+    },
+    {
+      "path": "skills\\slide-image-dual-render\\scripts\\lib\\object_manifest.js",
+      "sha256": "0fc637d7bc81b0c4ebfbcd2ee1a02fa97fc9d16562c10df7f79bb23adac08fa6",
+      "bytes": 4540
+    },
+    {
+      "path": "skills\\slide-image-dual-render\\scripts\\lib\\profile.js",
+      "sha256": "713c15ce2b911ab361490ba545f07c04416f67d98f992d6a9e72582728880bd7",
+      "bytes": 20731
+    },
+    {
+      "path": "skills\\slide-image-dual-render\\scripts\\lib\\slides.template.js",
+      "sha256": "3521e51822432d3a9150b3bf09fe40f3d6634806062f88a0752b4de16c6b916e",
+      "bytes": 5499
+    },
+    {
+      "path": "skills\\slide-image-dual-render\\scripts\\make_bg.py",
+      "sha256": "88cc11c657621b9ebad3330d029e87253a3eaa24aa8f35e73d990305892cf49e",
+      "bytes": 4993
+    },
+    {
+      "path": "skills\\slide-image-dual-render\\scripts\\make_crops.py",
+      "sha256": "284c223ce87952f23f169042af428a5d79ade8615fd7c50402ce17575265f19a",
+      "bytes": 12781
+    },
+    {
+      "path": "skills\\slide-image-dual-render\\scripts\\make_icons.js",
+      "sha256": "104dffeab5de7e7a2668439026ac04c67d351205a454453ede4817273f360c5d",
+      "bytes": 11897
+    },
+    {
+      "path": "skills\\slide-image-dual-render\\scripts\\merge_fragments.js",
+      "sha256": "bc9bb94f1bed3c8365e83343696c671cb1c632d3446ef1427c1ab21a6c94f2ab",
+      "bytes": 5944
+    },
+    {
+      "path": "skills\\slide-image-dual-render\\scripts\\preview.js",
+      "sha256": "6be6f3a80871b3d373fbd91fdb20fe653c6e2d31b71b332e863649500ac6460d",
+      "bytes": 11387
+    },
+    {
+      "path": "skills\\slide-image-dual-render\\scripts\\slide_pipeline.js",
+      "sha256": "3406ac81771e77e9b5ee4d7d435590a0864f35da02fa9540cf8c4a51cfaaefdc",
+      "bytes": 31854
+    },
+    {
+      "path": "skills\\slide-image-dual-render\\scripts\\test_crop_metadata_roundtrip.py",
+      "sha256": "1ccee5eff4b3a4de331eaf76a672b206ee6844e4e3e3d8de1dd5b89efc429f4b",
+      "bytes": 6239
+    },
+    {
+      "path": "skills\\slide-image-dual-render\\scripts\\test_font_pipeline_integration.js",
+      "sha256": "29168c1d29a7c31b842bbf32cf0e6bb87f7e3cf07a7abd170590a585129ed929",
+      "bytes": 7307
+    },
+    {
+      "path": "skills\\slide-image-dual-render\\scripts\\test_font_policy.js",
+      "sha256": "a06bc72966cd6bc9fc94ed5716c089eab5e9796549dfd949b6b21300a7fa7cdc",
+      "bytes": 4933
+    },
+    {
+      "path": "skills\\slide-image-dual-render\\scripts\\test_font_provenance.js",
+      "sha256": "23456a4c35ca0f7bbd925e02b8785083986dfa75985df3c5efda71ef8b3db208",
+      "bytes": 2309
+    },
+    {
+      "path": "skills\\slide-image-dual-render\\scripts\\test_html_qa_static_mode.js",
+      "sha256": "82d5b9c6259c942933e8a7d68866e793256258b29857184fc4d8a7e3cd25cc78",
+      "bytes": 3438
+    },
+    {
+      "path": "skills\\slide-image-dual-render\\scripts\\test_make_icons.js",
+      "sha256": "260b81bf03a1c64b4357c755b6dc739f0960b97eea88794a04b5cda4061ce5a5",
+      "bytes": 2665
+    },
+    {
+      "path": "skills\\slide-image-dual-render\\scripts\\test_pptx_html_parity_helpers.js",
+      "sha256": "03b295543eff1db84c6b642dcba2d067de2eed2328ed66270c6ddb6e74d29911",
+      "bytes": 2530
+    },
+    {
+      "path": "skills\\slide-image-dual-render\\scripts\\validate_agent_work.js",
+      "sha256": "03bcc85338c0d3359fb759e7be3aafbb5b73bf8f4cea4822897576bccc3ad2fb",
+      "bytes": 6189
+    },
+    {
+      "path": "skills\\slide-image-dual-render\\scripts\\validate_pptx_package.py",
+      "sha256": "a5f9cad396f12967a353eedb98d6ce9fd79b96ae7704c3839646fd7a361338a7",
+      "bytes": 12648
+    },
+    {
+      "path": "skills\\slide-image-dual-render\\SKILL.md",
+      "sha256": "4e2bdd25786b923d27c5a5e49e70e30479564703701d877a028fa6ca71adf96b",
+      "bytes": 32509
+    },
+    {
+      "path": "skills\\slide-image-dual-render\\styles\\_schema.md",
+      "sha256": "3ee361f16299eca5bb92c4fbf41e57ec90610c8b07f1433af1215cf73c7a65c8",
+      "bytes": 3297
+    },
+    {
+      "path": "skills\\slide-image-dual-render\\styles\\clinical-dark.json",
+      "sha256": "3acf0d97fe30153884ede05238104847e330c28412f761def2d0d6b0f87149ac",
+      "bytes": 2298
+    },
+    {
+      "path": "skills\\slide-image-dual-render\\styles\\corporate-light.json",
+      "sha256": "6627b877ba4aa2f144d8bd6c9acd2283974466b9e61e44216deeceed3b16fe55",
+      "bytes": 2282
+    },
+    {
+      "path": "skills\\slide-text-layer-inpaint\\references\\handoff-to-slide-image-dual-render.md",
+      "sha256": "ddd5bd0013121705eba13823d48131339494ac86d8527734959a4eee811d1d46",
+      "bytes": 4006
+    },
+    {
+      "path": "skills\\slide-text-layer-inpaint\\references\\inpainting-policy.md",
+      "sha256": "b8ba65dd2c9efa0380eb9b1be239cd2c692d19ea038a74b1723d3dfa16edeff6",
+      "bytes": 4479
+    },
+    {
+      "path": "skills\\slide-text-layer-inpaint\\references\\pseudo-text-policy.md",
+      "sha256": "762d87a10a0721ddc9d0f0013d45275b9f743cea97591696e7f8264e1517bdd5",
+      "bytes": 3178
+    },
+    {
+      "path": "skills\\slide-text-layer-inpaint\\references\\text-region-schema.md",
+      "sha256": "75a8e313a7f8c68e3b176efdadb69d9bd85684ffbd09ae934322649502fecd88",
+      "bytes": 7756
+    },
+    {
+      "path": "skills\\slide-text-layer-inpaint\\scripts\\classify_background_regions.py",
+      "sha256": "1d40ae589f7a2a5e98c21e9215946fdc944d6587f46ed576096cb862166961b6",
+      "bytes": 8757
+    },
+    {
+      "path": "skills\\slide-text-layer-inpaint\\scripts\\detect_residual_text.py",
+      "sha256": "e53c5b6b76492f3c483ea933ebb0798b997d66de3c572fe37f0f0a33c23c6c9f",
+      "bytes": 7314
+    },
+    {
+      "path": "skills\\slide-text-layer-inpaint\\scripts\\detect_text_regions.py",
+      "sha256": "2adcf7b06160d2bb464c5c9810d8046c2eaeaa352e10fd3dd5204b344867d862",
+      "bytes": 12956
+    },
+    {
+      "path": "skills\\slide-text-layer-inpaint\\scripts\\enforce_text_layer.js",
+      "sha256": "0cd21538fa23798f2d700105bef32caf96bd33bbcbef893a6e2001248437d726",
+      "bytes": 23155
+    },
+    {
+      "path": "skills\\slide-text-layer-inpaint\\scripts\\inpaint_text_regions.py",
+      "sha256": "ad40e94e9fac7d2ee7f611d819eefd68116da698aa7234abe7240580274ff1bc",
+      "bytes": 11874
+    },
+    {
+      "path": "skills\\slide-text-layer-inpaint\\scripts\\make_text_masks.py",
+      "sha256": "eba19a92becefedb7a70aef37efb1b79c44dbb20c974a993a95426f81ba32095",
+      "bytes": 13652
+    },
+    {
+      "path": "skills\\slide-text-layer-inpaint\\scripts\\repair_text_backgrounds.py",
+      "sha256": "6d120adc97ebed09704d87fd2cb3077f48e0bd0496bc094a04bb8f58d1629264",
+      "bytes": 12763
+    },
+    {
+      "path": "skills\\slide-text-layer-inpaint\\SKILL.md",
+      "sha256": "16908c4d9c4c79c55fa2dc05c3be737882e21635b695a1cfd072362c0a38db55",
+      "bytes": 8631
+    },
+    {
+      "path": "skills\\slide-visual-polish-qa\\assets\\calibration\\default-visual-qa-profile.json",
+      "sha256": "81d18b3b01640183cef6edf274abba3e6026991ceabbfab935555b4a6deb3e10",
+      "bytes": 3105
+    },
+    {
+      "path": "skills\\slide-visual-polish-qa\\references\\handoff-to-slide-image-dual-render.md",
+      "sha256": "b27e09f529854be1efb06d5c86e0ac29a8ed1fab8fd8a42fe26dadcc0b34dee5",
+      "bytes": 1158
+    },
+    {
+      "path": "skills\\slide-visual-polish-qa\\references\\metric-policy.md",
+      "sha256": "8a251ef34fca722deb8d4e989d3f5f84ac436afccfee5370425a4dacb7738d27",
+      "bytes": 3488
+    },
+    {
+      "path": "skills\\slide-visual-polish-qa\\references\\polish-fix-plan-schema.md",
+      "sha256": "df231d952f5f6a55f7eda86e004a237c8b45d8b3c67bde5b60f04417c066e847",
+      "bytes": 4106
+    },
+    {
+      "path": "skills\\slide-visual-polish-qa\\references\\screenshot-raster-policy.md",
+      "sha256": "1ce67a9bf666296548da7472125ef7b1f6871db97b843aa948253241ba34b421",
+      "bytes": 3106
+    },
+    {
+      "path": "skills\\slide-visual-polish-qa\\references\\threshold-calibration.md",
+      "sha256": "dc7dfcaf4b36d619cfad2f09bf6e815e60a07b79fcbb2b5734fbd32d2d23db73",
+      "bytes": 7415
+    },
+    {
+      "path": "skills\\slide-visual-polish-qa\\references\\visual-qa-workflow.md",
+      "sha256": "814c13c2b26f8bd1c2c0ac373a30d12f5bf742a822e680d736aecb719a503f4e",
+      "bytes": 3173
+    },
+    {
+      "path": "skills\\slide-visual-polish-qa\\scripts\\capture_html_screenshot.py",
+      "sha256": "fea0ccfc95ac5a747a39682b6a0e32e4b8f4811e1b8e41f56dc06f4c8427b9b9",
+      "bytes": 27292
+    },
+    {
+      "path": "skills\\slide-visual-polish-qa\\scripts\\compare_slide_images.py",
+      "sha256": "981250231b56ba2ce7467bc35161b3c97a49f262a74729aaaeb14fb5bd4edeed",
+      "bytes": 65642
+    },
+    {
+      "path": "skills\\slide-visual-polish-qa\\scripts\\enforce_visual_qa.js",
+      "sha256": "8707df0546e51ba0886cdc1eb3eddc13b95773045c7ae77870160635069687d4",
+      "bytes": 10687
+    },
+    {
+      "path": "skills\\slide-visual-polish-qa\\scripts\\generate_visual_qa_summary.js",
+      "sha256": "a7dd7e8cdd98e1d12e6d9a8105e1e39de2abc8d3255469291b7c4291db543e56",
+      "bytes": 9244
+    },
+    {
+      "path": "skills\\slide-visual-polish-qa\\scripts\\rasterize_pptx.py",
+      "sha256": "6a9163d34f190ca04ca0ed11a06a8166fd501d0fef0fcedd23e4d413b8e76b83",
+      "bytes": 17988
+    },
+    {
+      "path": "skills\\slide-visual-polish-qa\\scripts\\slide_mapping.py",
+      "sha256": "1ad4d0b85a47b34161600b59128df71e9efb47809460c2f7aeb75e072016c22b",
+      "bytes": 10923
+    },
+    {
+      "path": "skills\\slide-visual-polish-qa\\scripts\\test_html_capture_cache.py",
+      "sha256": "b3e7136e01d810ae9f23df2e5fea9085cbbf9467dec2a7402d05411e016d0b34",
+      "bytes": 3244
+    },
+    {
+      "path": "skills\\slide-visual-polish-qa\\scripts\\test_html_capture_not_flat.py",
+      "sha256": "311d1e98bb6074afc1cf119702c21ceaf158c74c6a076c8dcc4dfea765957370",
+      "bytes": 6463
+    },
+    {
+      "path": "skills\\slide-visual-polish-qa\\scripts\\test_visual_qa_calibration.py",
+      "sha256": "b54629e4f48f19e55738f7fa4d94f53e76a88c8dc13c0354ee164a7a3eaade30",
+      "bytes": 8947
+    },
+    {
+      "path": "skills\\slide-visual-polish-qa\\scripts\\test_wave_slide_mapping.py",
+      "sha256": "da68a86cef175baae64c0dbb0179b14afc2cfbc03b404df20dabed24c5dc71a3",
+      "bytes": 4858
+    },
+    {
+      "path": "skills\\slide-visual-polish-qa\\SKILL.md",
+      "sha256": "9b3e3e5af0fd87880b80f58b0e654a6159b641adee7e30435d4e52d6dc8f2bfc",
+      "bytes": 6621
+    },
+    {
+      "path": "tests\\smoke-test-manifest.json",
+      "sha256": "e3b19086029a3fb9abc717b94aec96f7154be77084586b055ac102ad75d7a6b8",
+      "bytes": 348
+    },
+    {
+      "path": "tests\\verify_python_scripts.py",
+      "sha256": "9c9525144f923bce894c5dac008fb241f66f3bebfa0153e23f22f28a097091d9",
+      "bytes": 964
+    },
+    {
+      "path": "tests\\verify_skillset_layout.js",
+      "sha256": "f41b897afff4fb9edfabdc324ab29f5bf1feb80578a138e6613d56b49a680b22",
+      "bytes": 3230
+    },
+    {
+      "path": "uninstall.ps1",
+      "sha256": "7a3751f44c4c3a9684ec19a8beff07532fc2f46174237558b03f626e9d49a6e5",
+      "bytes": 1227
+    },
+    {
+      "path": "verify_install.ps1",
+      "sha256": "59802d8477ea4ea005a344a25b4b1ae6d7dc323101532b3a261c1859a0589576",
+      "bytes": 6045
+    },
+    {
+      "path": "VERIFY.md",
+      "sha256": "5a162757804a7ad499f7cf66cac344475b332d2d7f5ad2a21ad3e53cdf56e390",
+      "bytes": 749
+    },
+    {
+      "path": "VERSION",
+      "sha256": "b784da815c46185f5fe9db51d857c871a6728904d067a4e7fa4020e41d1dd3c8",
+      "bytes": 8
+    }
+  ]
 }

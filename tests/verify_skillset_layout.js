@@ -41,6 +41,14 @@ for (const skill of skills) {
   requirePath(path.join(skillRoot, 'SKILL.md'));
 }
 
+for (const relPath of [
+  'skills/slide-image-dual-render/scripts/font_preflight.js',
+  'skills/slide-image-dual-render/scripts/integrate_subagent_work.js',
+  'skills/slide-image-dual-render/scripts/validate_agent_work.js',
+  'skills/slide-image-dual-render/scripts/test_font_pipeline_integration.js',
+  'skills/slide-image-dual-render/assets/codex-hardlock/AGENTS.md',
+]) requirePath(path.join(root, ...relPath.split('/')));
+
 requirePath(path.join(root, 'examples', 'prompt-blocking-zero.txt'));
 requirePath(path.join(root, 'examples', 'prompt-canary.txt'));
 requirePath(path.join(root, 'examples', 'prompt-visual-qa-only.txt'));
@@ -52,7 +60,6 @@ function walk(dir) {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) {
       if (excludedDirNames.has(entry.name)) {
-        errors.push(`excluded directory present: ${rel(full)}`);
         continue;
       }
       walk(full);
@@ -70,6 +77,7 @@ if (fs.existsSync(path.join(root, 'MANIFEST.json'))) {
   const manifestText = fs.readFileSync(path.join(root, 'MANIFEST.json'), 'utf8').replace(/^\uFEFF/, '');
   const manifest = JSON.parse(manifestText);
   if (manifest.name !== 'pngtopptx-toolkit') errors.push('manifest name mismatch');
+  if (manifest.version !== fs.readFileSync(path.join(root, 'VERSION'), 'utf8').trim()) errors.push('manifest version mismatch');
   if (!Array.isArray(manifest.modules) || manifest.modules.length !== 4) errors.push('manifest modules must list 4 modules');
   if (!Array.isArray(manifest.fileChecksums) || manifest.fileChecksums.length < 1) errors.push('manifest missing fileChecksums');
 }

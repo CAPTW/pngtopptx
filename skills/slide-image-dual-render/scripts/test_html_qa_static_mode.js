@@ -16,8 +16,8 @@ function findNodePath() {
   const candidates = [
     process.env.NODE_PATH,
     path.join(process.cwd(), "node_modules"),
-    path.join("C:\\Users\\USER\\Downloads", "node_modules"),
     path.join(SCRIPT_DIR, "..", "node_modules"),
+    path.resolve(SCRIPT_DIR, "..", "..", "..", "node_modules"),
   ].filter(Boolean);
   for (const candidate of candidates) {
     if (fs.existsSync(path.join(candidate, "pptxgenjs"))) return candidate;

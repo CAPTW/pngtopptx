@@ -29,11 +29,75 @@ const MAN = fs.existsSync(_manPath) ? JSON.parse(fs.readFileSync(_manPath, 'utf8
 // system. The final font is resolved through a local-font parity policy so PPTX
 // and HTML do not silently use different metrics.
 // Keys of C are identical to the former literal, so no helper below has to change.
-const { loadProfile, paletteC, resolveFontPolicy } = require('./profile');
+const { loadProfile, paletteC, resolveFontPolicy, resolveFontMapping, _helpers } = require('./profile');
 const PROFILE = loadProfile();
 const C = paletteC(PROFILE);
 const FONT_POLICY = resolveFontPolicy(PROFILE);
 const FONT = FONT_POLICY.resolved;
+const FONT_MANIFEST_PATH = path.resolve(process.env.DECK_FONT_RESOLUTION_MANIFEST || path.join(process.env.DECK_PROJECT_ROOT || process.cwd(), 'out', 'font_resolution_manifest.json'));
+const FONT_MAPPINGS = new Map();
+
+function rememberFontMapping(mapping){
+  if(!mapping || !mapping.original) return mapping;
+  FONT_MAPPINGS.set(_helpers.normalizeFamilyKey(mapping.original), mapping);
+  const index = FONT_POLICY.mappings.findIndex(item => _helpers.normalizeFamilyKey(item.original) === _helpers.normalizeFamilyKey(mapping.original));
+  if(index >= 0) FONT_POLICY.mappings[index] = mapping;
+  else FONT_POLICY.mappings.push(mapping);
+  return mapping;
+}
+
+for(const mapping of FONT_POLICY.mappings || []) rememberFontMapping(mapping);
+try {
+  if(fs.existsSync(FONT_MANIFEST_PATH)){
+    const preflight = JSON.parse(fs.readFileSync(FONT_MANIFEST_PATH, 'utf8'));
+    for(const mapping of preflight.mappings || []) rememberFontMapping(mapping);
+  }
+} catch(err){
+  console.warn('slide-image-dual-render: could not load font resolution manifest:', err.message);
+}
+
+function resolveRenderFont(original){
+  const requested = String(original || FONT).trim() || FONT;
+  const key = _helpers.normalizeFamilyKey(requested);
+  if(FONT_MAPPINGS.has(key)){
+    const mapping = FONT_MAPPINGS.get(key);
+    if(mapping.approvalRequired || !mapping.resolved){
+      return resolveFontMapping(requested, { fallbackCandidates:[FONT] }).resolved;
+    }
+    return mapping.resolved;
+  }
+  const mapping = resolveFontMapping(requested, { fallbackCandidates:[FONT] });
+  rememberFontMapping(mapping);
+  return mapping.resolved;
+}
+
+function fontMappingFor(original){
+  const requested = String(original || FONT).trim() || FONT;
+  const resolved = resolveRenderFont(requested);
+  return FONT_MAPPINGS.get(_helpers.normalizeFamilyKey(requested)) || { original:requested, resolved };
+}
+
+function persistFontResolutionManifest(file=FONT_MANIFEST_PATH){
+  let manifest = {};
+  try { if(fs.existsSync(file)) manifest = JSON.parse(fs.readFileSync(file, 'utf8')); } catch(err){}
+  const mappings = Array.from(FONT_MAPPINGS.values()).sort((a,b) => String(a.original).localeCompare(String(b.original)));
+  manifest.schemaVersion = 'slide-image-dual-render.font-resolution-manifest.v1';
+  manifest.generatedAt = manifest.generatedAt || new Date().toISOString();
+  manifest.runtimeUpdatedAt = new Date().toISOString();
+  manifest.projectRoot = path.resolve(process.env.DECK_PROJECT_ROOT || process.cwd());
+  manifest.status = mappings.some(mapping => mapping.approvalRequired || !mapping.resolved) ? 'USER_DECISION_REQUIRED' : 'PASS';
+  manifest.installPolicy = 'ask-user-before-install; automatic-installation-forbidden';
+  manifest.automaticInstallationAttempted = false;
+  manifest.conversionContinuesAfterDecision = true;
+  manifest.originalFontCount = mappings.length;
+  manifest.exactCount = mappings.filter(mapping => mapping.exact).length;
+  manifest.fallbackCount = mappings.filter(mapping => mapping.fallbackApplied).length;
+  manifest.approvalRequiredCount = mappings.filter(mapping => mapping.approvalRequired).length;
+  manifest.mappings = mappings;
+  fs.mkdirSync(path.dirname(file), { recursive:true });
+  fs.writeFileSync(file, JSON.stringify(manifest, null, 2) + '\n', 'utf8');
+  return manifest;
+}
 
 // ---- atomic-ish wrappers ----
 function bg(s){ s.bgFill(C.bg); s.img(path.join(ASSET,'bg.png'), 0,0, PXW,PXH); }
@@ -179,5 +243,6 @@ function detailRows(s, rows, x, y, w, rowH, o={}){
 
 module.exports = {
   PXW, PXH, ASSET, ICON, MAN, C, FONT, FONT_POLICY,
+  resolveRenderFont, fontMappingFor, persistFontResolutionManifest, FONT_MANIFEST_PATH,
   bg, crop, imageAt, panel, rline, T, badge, icon, footer, head, banner, chevronBar, iconRows, detailRows,
 };

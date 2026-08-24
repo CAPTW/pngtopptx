@@ -16,7 +16,7 @@ function usage() {
 
 Usage:
   node scripts/enforce_contract.js --phase preflight|postbuild|final [options]
-  node C:\\Users\\USER\\.pngtopptx\\skills\\slide-image-dual-render\\scripts\\enforce_contract.js --project . --phase preflight
+  node "%USERPROFILE%\\.codex\\skills\\slide-image-dual-render\\scripts\\enforce_contract.js" --project . --phase preflight
 
 Options:
   --project <path>      Deck project root. Defaults to current working directory.
@@ -68,7 +68,7 @@ function isInside(root, candidate) {
 
 function looksLikeInstalledSkillRoot(p) {
   const n = path.resolve(p).replace(/\\/g, '/').toLowerCase();
-  return n.endsWith('/.pngtopptx/skills/slide-image-dual-render');
+  return n.endsWith('/.codex/skills/slide-image-dual-render');
 }
 
 function fileExists(file) {
@@ -112,9 +112,12 @@ function resolveLayout(args) {
     tracePath: resolveFromProject(projectRoot, args.trace, path.join('out', 'render_trace.json')),
     buildJsPath: path.join(SCRIPT_ROOT, 'build.js'),
     slidePipelinePath: path.join(SCRIPT_ROOT, 'slide_pipeline.js'),
+    fontPreflightPath: path.join(SCRIPT_ROOT, 'font_preflight.js'),
     kitJsPath: path.join(SCRIPT_ROOT, 'lib', 'kit.js'),
     atomsPptxPath: path.join(SCRIPT_ROOT, 'lib', 'atoms_pptx.js'),
     atomsHtmlPath: path.join(SCRIPT_ROOT, 'lib', 'atoms_html.js'),
+    fontResolutionManifestPath: path.join(projectRoot, 'out', 'font_resolution_manifest.json'),
+    nativeObjectManifestPath: path.join(projectRoot, 'out', 'native_object_manifest.json'),
     pptxOut: path.join(projectRoot, 'out', 'deck.pptx'),
     htmlOut: path.join(projectRoot, 'out', 'deck.html'),
   };
@@ -151,6 +154,7 @@ function validatePathContract(args, layout, errors) {
   if (!fileExists(layout.kitJsPath)) add(errors, `Approved kit.js not found: ${layout.kitJsPath}`);
   if (!fileExists(layout.atomsPptxPath)) add(errors, `Approved PPTX backend not found: ${layout.atomsPptxPath}`);
   if (!fileExists(layout.atomsHtmlPath)) add(errors, `Approved HTML backend not found: ${layout.atomsHtmlPath}`);
+  if (!fileExists(layout.fontPreflightPath)) add(errors, `Approved font preflight not found: ${layout.fontPreflightPath}`);
   if (!fileExists(layout.slidesJsPath)) add(errors, `Deck lib/slides.js is missing: ${layout.slidesJsPath}`);
   if (!args.qaOnly && !dirExists(layout.srcDir)) add(errors, `Deck src/ directory is missing: ${layout.srcDir}`);
 }
@@ -248,7 +252,7 @@ function shouldScanFile(projectRoot, file) {
   if (!rel || rel.startsWith('..')) return false;
   if (rel === 'SKILL.md') return false;
   if (rel.startsWith('references/')) return false;
-  if (rel.startsWith('assets/validation/')) return false;
+  if (rel.startsWith('assets/codex-hardlock/')) return false;
   if (rel.startsWith('out/') || rel.startsWith('assets/') || rel.startsWith('work/') || rel.includes('/node_modules/')) return false;
   if (rel.endsWith('.md')) return false;
   const base = path.basename(rel);
@@ -326,6 +330,7 @@ function validateOutputAndTrace(args, layout, errors) {
   if (!trace) return;
   requireTraceFields(trace, [
     'skillRoot', 'projectRoot', 'buildJsPath', 'slidesJsPath', 'kitJsPath', 'atomsPptxPath', 'atomsHtmlPath',
+    'fontPreflightPath', 'fontResolutionManifestPath', 'fontResolutionManifestHash', 'fontPreflight',
     'pptxOut', 'htmlOut', 'hashes', 'enforcementDisabled', 'strictMode', 'invokedByPipeline',
     'preflightValidation', 'postbuildValidation', 'finalValidation', 'startTimeMs', 'dependencyResolutionMode'
   ], errors);
@@ -336,11 +341,15 @@ function validateOutputAndTrace(args, layout, errors) {
   if (trace.kitJsPath && normal(trace.kitJsPath) !== normal(layout.kitJsPath)) add(errors, `Trace kitJsPath does not match approved kit.js: ${trace.kitJsPath}`);
   if (trace.atomsPptxPath && normal(trace.atomsPptxPath) !== normal(layout.atomsPptxPath)) add(errors, `Trace atomsPptxPath does not match approved PPTX backend: ${trace.atomsPptxPath}`);
   if (trace.atomsHtmlPath && normal(trace.atomsHtmlPath) !== normal(layout.atomsHtmlPath)) add(errors, `Trace atomsHtmlPath does not match approved HTML backend: ${trace.atomsHtmlPath}`);
+  if (trace.fontPreflightPath && normal(trace.fontPreflightPath) !== normal(layout.fontPreflightPath)) add(errors, `Trace fontPreflightPath does not match approved font preflight: ${trace.fontPreflightPath}`);
+  if (trace.fontResolutionManifestPath && normal(trace.fontResolutionManifestPath) !== normal(layout.fontResolutionManifestPath)) add(errors, `Trace fontResolutionManifestPath does not match the deck font manifest: ${trace.fontResolutionManifestPath}`);
+  if (fileExists(layout.fontResolutionManifestPath) && trace.fontResolutionManifestHash !== sha256(layout.fontResolutionManifestPath)) add(errors, 'Trace fontResolutionManifestHash does not match the current font resolution manifest.');
   if (trace.enforcementDisabled === true) add(errors, 'Trace indicates SLIDE_PIPELINE_ENFORCE was disabled. Production delivery is invalid.');
   if (!Object.prototype.hasOwnProperty.call(trace, 'nodePathUsed')) add(errors, 'Trace is missing required field: nodePathUsed.');
   if (trace.dependencyResolutionMode === 'missing') add(errors, 'Trace dependencyResolutionMode is missing; production dependencies were not resolved.');
   if (Array.isArray(trace.dependencyMissingPackages) && trace.dependencyMissingPackages.length) add(errors, 'Trace reports missing Node dependencies: ' + trace.dependencyMissingPackages.join(', '));
   if (trace.invokedByPipeline !== true) add(errors, 'Trace must show invokedByPipeline: true. Direct build outputs are not production-valid.');
+  if (!trace.fontPreflight || trace.fontPreflight.passed !== true) add(errors, 'Trace must show fontPreflight.passed: true.');
   if (!trace.preflightValidation || trace.preflightValidation.passed !== true) add(errors, 'Trace must show preflightValidation.passed: true.');
   if (args.phase === 'final' && (!trace.postbuildValidation || trace.postbuildValidation.passed !== true)) add(errors, 'Trace must show postbuildValidation.passed: true.');
 
@@ -349,13 +358,58 @@ function validateOutputAndTrace(args, layout, errors) {
   if (target === 'pptx' || target === 'both') outputs.push(['PPTX', trace.pptxOut || (trace.generated && trace.generated.pptx)]);
   if (target === 'html' || target === 'both') outputs.push(['HTML', trace.htmlOut || (trace.generated && trace.generated.html)]);
   const start = Number(trace.startTimeMs || Date.parse(trace.timestamp || ''));
+  if (args.qaOnly && trace.qaOnly !== true) add(errors, 'QA-only validation requires a trace produced with qaOnly=true.');
   for (const [kind, out] of outputs) {
     if (!out) { add(errors, `Trace is missing ${kind} output path.`); continue; }
     const resolved = path.resolve(out);
     if (!isInside(layout.projectRoot, resolved)) add(errors, `${kind} output path is outside projectRoot: ${resolved}`);
     if (looksLikeInstalledSkillRoot(layout.skillRoot) && isInside(layout.skillRoot, resolved) && !args.selfTest) add(errors, `${kind} output path resolves inside installed Skill root: ${resolved}`);
     if (!fileExists(resolved)) { add(errors, `${kind} output does not exist: ${resolved}`); continue; }
-    if (Number.isFinite(start) && fs.statSync(resolved).mtimeMs + 1 < start) add(errors, `${kind} output is older than pipeline start time: ${resolved}`);
+    if (!(args.qaOnly && trace.qaOnly === true) && Number.isFinite(start) && fs.statSync(resolved).mtimeMs + 1 < start) add(errors, `${kind} output is older than pipeline start time: ${resolved}`);
+  }
+}
+
+function validateFontResolution(args, layout, errors){
+  const required = process.env.SLIDE_PIPELINE_INVOKED === '1' || ['postbuild', 'final'].includes(args.phase);
+  if(!required) return;
+  if(!fileExists(layout.fontResolutionManifestPath)){
+    add(errors, `Font resolution manifest is missing: ${layout.fontResolutionManifestPath}`);
+    return;
+  }
+  let manifest;
+  try { manifest = JSON.parse(readText(layout.fontResolutionManifestPath)); }
+  catch(err){ add(errors, `Font resolution manifest is invalid JSON: ${err.message}`); return; }
+  if(manifest.schemaVersion !== 'slide-image-dual-render.font-resolution-manifest.v1') add(errors, `Unsupported font resolution manifest schema: ${manifest.schemaVersion}`);
+  if(manifest.status !== 'PASS') add(errors, `Font resolution status must be PASS before conversion; got ${manifest.status}`);
+  if(manifest.automaticInstallationAttempted !== false) add(errors, 'Automatic font installation is forbidden; manifest must record automaticInstallationAttempted: false.');
+  if(!Array.isArray(manifest.mappings) || !manifest.mappings.length){
+    add(errors, 'Font resolution manifest must contain at least one Original -> Resolved mapping.');
+    return;
+  }
+  const mappingKeys = new Set();
+  for(const mapping of manifest.mappings){
+    if(!mapping || !String(mapping.original || '').trim()) add(errors, 'Font mapping is missing original font.');
+    if(!mapping || !String(mapping.resolved || '').trim()) add(errors, `Font mapping for ${mapping && mapping.original || '<unknown>'} is missing resolved font.`);
+    if(mapping && mapping.approvalRequired) add(errors, `Font mapping for ${mapping.original} still requires user approval.`);
+    if(mapping && mapping.automaticInstallationAttempted !== false) add(errors, `Font mapping for ${mapping.original} does not prove automatic installation remained disabled.`);
+    if(mapping && mapping.original && mapping.resolved) mappingKeys.add(`${String(mapping.original).trim().toLowerCase()}=>${String(mapping.resolved).trim().toLowerCase()}`);
+  }
+  if(args.phase === 'preflight' || !fileExists(layout.nativeObjectManifestPath)) return;
+  let native;
+  try { native = JSON.parse(readText(layout.nativeObjectManifestPath)); }
+  catch(err){ add(errors, `Native object manifest is invalid JSON while checking font mappings: ${err.message}`); return; }
+  for(const [slideNo, slide] of Object.entries(native.slides || {})){
+    for(const obj of slide.objects || []){
+      if(obj.type !== 'text') continue;
+      const observed = Array.isArray(obj.fontMappings) && obj.fontMappings.length
+        ? obj.fontMappings
+        : (obj.originalFont && obj.resolvedFont ? [{ original:obj.originalFont, resolved:obj.resolvedFont }] : []);
+      if(!observed.length) add(errors, `Slide ${slideNo} text object is missing Original -> Resolved font provenance.`);
+      for(const mapping of observed){
+        const key = `${String(mapping.original || '').trim().toLowerCase()}=>${String(mapping.resolved || '').trim().toLowerCase()}`;
+        if(!mappingKeys.has(key)) add(errors, `Slide ${slideNo} used an unrecorded font mapping: ${mapping.original} -> ${mapping.resolved}`);
+      }
+    }
   }
 }
 
@@ -367,6 +421,7 @@ function runValidation(args) {
   validatePathContract(args, layout, errors);
   validateSlidesJs(args, layout, errors);
   validateCropManifest(args, layout, errors);
+  validateFontResolution(args, layout, errors);
   validateDirectGenerationScan(args, layout, errors);
   validateOutputAndTrace(args, layout, errors);
   if (errors.length) {
@@ -392,7 +447,6 @@ if (require.main === module) {
 }
 
 module.exports = { parseArgs, resolveLayout, runValidation, sha256 };
-
 
 
 

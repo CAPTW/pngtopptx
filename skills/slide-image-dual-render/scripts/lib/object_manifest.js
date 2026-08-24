@@ -68,8 +68,20 @@ function record(obj) {
   slide.objects.push(normalizeObject(obj));
 }
 
-function recordText(content, x, y, w, h, source) {
-  record({ type: 'text', x, y, w, h, textLength: textLength(content), editable: true, source: source || 'surface.txt' });
+function recordText(content, x, y, w, h, source, fontMeta) {
+  const meta = fontMeta || {};
+  const fontMappings = Array.isArray(meta.fontMappings)
+    ? meta.fontMappings
+      .filter(mapping => mapping && mapping.original && mapping.resolved)
+      .map(mapping => ({ original:mapping.original, resolved:mapping.resolved, exact:mapping.exact !== false, fallbackApplied:!!mapping.fallbackApplied }))
+    : [];
+  record({
+    type: 'text', x, y, w, h,
+    textLength: textLength(content), editable: true, source: source || 'surface.txt',
+    originalFont:meta.originalFont || null,
+    resolvedFont:meta.resolvedFont || null,
+    fontMappings,
+  });
 }
 
 function recordImage(file, x, y, w, h) {

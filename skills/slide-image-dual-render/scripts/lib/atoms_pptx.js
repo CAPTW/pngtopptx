@@ -1,5 +1,5 @@
 // atoms_pptx.js — pptxgenjs surface implementing unified atoms (PX coords).
-const { PXW, PXH, FONT } = require('./kit');
+const { PXW, PXH, FONT, resolveRenderFont, fontMappingFor } = require('./kit');
 const OM = require('./object_manifest');
 
 const SW = 13.333, SH = 7.5;
@@ -25,10 +25,11 @@ function safeLineGeom(x,y,w,h){
 }
 
 // content -> pptxgenjs text array
-function toRuns(content, baseColor){
+function toRuns(content, baseColor, baseFont){
   if(Array.isArray(content)){
     return content.map(r=>({ text:r.text, options:{
       color:r.color||baseColor, bold:!!r.bold, italic:!!r.italic, breakLine:!!r.breakLine,
+      fontFace:resolveRenderFont(r.fontFace||r.fontFamily||baseFont),
     }}));
   }
   const str = String(content);
@@ -78,10 +79,15 @@ function makePptxSurface(pptx, slide){
       });
     },
     txt(content, x,y,w,h, o={}){
-      OM.recordText(content, x,y,w,h,'surface.txt');
-      slide.addText(toRuns(content, o.color||'F2F7FC'), {
+      const originalFont = o.fontFace||o.fontFamily||FONT;
+      const resolvedFont = resolveRenderFont(originalFont);
+      const mappings = Array.isArray(content)
+        ? content.map(r => fontMappingFor(r.fontFace||r.fontFamily||originalFont))
+        : [fontMappingFor(originalFont)];
+      OM.recordText(content, x,y,w,h,'surface.txt', { originalFont, resolvedFont, fontMappings:mappings });
+      slide.addText(toRuns(content, o.color||'F2F7FC', originalFont), {
         x:ix(x), y:iy(y), w:ix(w), h:iy(h),
-        fontFace:FONT, fontSize:o.sz||12, color:o.color||'F2F7FC',
+        fontFace:resolvedFont, fontSize:o.sz||12, color:o.color||'F2F7FC',
         bold:!!o.bold, italic:!!o.italic, align:o.align||'left', valign:o.valign||'middle',
         lineSpacingMultiple:o.lh!=null?o.lh:1.0, charSpacing:o.cs,
         margin:o.margin!=null?o.margin:0, wrap:o.wrap!=null?o.wrap:true, shrinkText:!!o.shrink,

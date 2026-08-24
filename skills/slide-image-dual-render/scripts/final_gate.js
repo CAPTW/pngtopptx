@@ -18,7 +18,7 @@ function usage() {
 
 Usage:
   node scripts/final_gate.js --target pptx|html|both --pptx out/deck.pptx --html out/deck.html [options]
-  node C:\\Users\\USER\\.pngtopptx\\skills\\slide-image-dual-render\\scripts\\final_gate.js --project . --target both --pptx out\\deck.pptx --html out\\deck.html
+  node "%USERPROFILE%\\.codex\\skills\\slide-image-dual-render\\scripts\\final_gate.js" --project . --target both --pptx out\\deck.pptx --html out\\deck.html
 
 Options:
   --project <path>      Deck project root. Defaults to current working directory.
@@ -76,7 +76,7 @@ function isInside(root, candidate) {
 
 function looksLikeInstalledSkillRoot(p) {
   const n = path.resolve(p).replace(/\\/g, '/').toLowerCase();
-  return n.endsWith('/.pngtopptx/skills/slide-image-dual-render');
+  return n.endsWith('/.codex/skills/slide-image-dual-render');
 }
 
 function fileExists(file) {
@@ -205,7 +205,7 @@ function validateOutputs(args, layout, trace, errors) {
     if (!fileExists(file)) { add(errors, `${kind} output is missing: ${file}`); continue; }
     if (!isInside(layout.projectRoot, file)) add(errors, `${kind} output is outside projectRoot: ${file}`);
     if (looksLikeInstalledSkillRoot(layout.skillRoot) && isInside(layout.skillRoot, file) && !args.selfTest) add(errors, `${kind} output resolves inside installed Skill root: ${file}`);
-    if (Number.isFinite(start) && fs.statSync(file).mtimeMs + 1 < start) add(errors, `${kind} output is older than pipeline start time: ${file}`);
+    if (trace.qaOnly !== true && Number.isFinite(start) && fs.statSync(file).mtimeMs + 1 < start) add(errors, `${kind} output is older than pipeline start time: ${file}`);
   }
 }
 
@@ -220,6 +220,11 @@ function manifestEntries(data) {
 }
 
 function validateCropTrace(layout, trace, errors) {
+  if (trace.skipCrops === true) {
+    if (trace.cropPlanHash) add(errors, 'Trace marks skipCrops but still records a cropPlanHash.');
+    if (trace.cropManifestHash) add(errors, 'Trace marks skipCrops but still records a cropManifestHash.');
+    return;
+  }
   const manifestPath = trace.cropManifestPath || path.join(layout.projectRoot, 'assets', 'manifest.json');
   let entries = [];
   if (fileExists(manifestPath)) {
@@ -429,7 +434,7 @@ function runPptxPackageValidator(args, layout, trace) {
   if (result.error) throw result.error;
   if (result.status !== 0) throw new Error(`PPTX package/openability validation failed with exit code ${result.status}. See ${reportMarkdown}`);
 }
-function runFinalValidator(args, layout) {
+function runFinalValidator(args, layout, trace) {
   const argv = [
     layout.enforceContractPath,
     '--phase', 'final',
@@ -438,6 +443,7 @@ function runFinalValidator(args, layout) {
     '--trace', layout.tracePath,
   ];
   if (args.selfTest) argv.push('--self-test');
+  if (trace && trace.qaOnly === true) argv.push('--qa-only');
   const res = cp.spawnSync(NODE, argv, {
     cwd: layout.projectRoot,
     stdio: 'inherit',
@@ -471,7 +477,7 @@ function main() {
   }
   if (errors.length) throw new Error(`Final gate failed:\n- ${errors.join('\n- ')}`);
 
-  runFinalValidator(args, layout);
+  runFinalValidator(args, layout, trace);
   runPptxPackageValidator(args, layout, trace);
   runQaValidator(args, layout, trace);
   runReconstructionValidator(args, layout, trace);
@@ -484,7 +490,6 @@ catch (err) {
   console.error(`[final-gate] ERROR: ${err.message}`);
   process.exit(1);
 }
-
 
 
 

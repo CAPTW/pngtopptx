@@ -14,12 +14,17 @@ const SKILL_ROOT = path.basename(SCRIPT_DIR).toLowerCase() === 'scripts'
 const NODE = process.execPath;
 const REQUIRED_NODE_PACKAGES = ['pptxgenjs', 'sharp', 'react', 'react-dom', 'react-icons'];
 
+function requiredNodePackages(args){
+  if(args && args.skipAssets) return ['pptxgenjs'];
+  return REQUIRED_NODE_PACKAGES.slice();
+}
+
 function usage() {
   console.log(`slide_pipeline.js - hard-locked slide-image-dual-render entrypoint
 
 Usage:
   node scripts/slide_pipeline.js [options]
-  node C:\\Users\\USER\\.pngtopptx\\skills\\slide-image-dual-render\\scripts\\slide_pipeline.js --project . [options]
+  node "%USERPROFILE%\\.pngtopptx\\skills\\slide-image-dual-render\\scripts\\slide_pipeline.js" --project . [options]
 
 Options:
   --project <path>      Deck project root. Defaults to current working directory.
@@ -32,6 +37,10 @@ Options:
   --max-batch-size <n> Maximum selected slides in reconstruction mode. Default: 5.
   --allow-large-batch  Allow a reconstruction batch larger than --max-batch-size.
   --profile <path>     DECK_PROFILE path. Relative paths resolve from project root.
+  --font-usage <path>  Original-font inventory JSON. Default: work/font_usage.json when present.
+  --font-install-decision <decision>
+                       ask, approved, declined, unavailable, or installed. Default: ask.
+                       The workflow never installs a font automatically.
   --assets <path>      DECK_ASSETS path. Relative paths resolve from project root.
   --icon-usage <path>  Explicit on-demand icon manifest. Relative paths resolve from project root.
   --crop-plan <path>   Crop plan JSON. Relative paths resolve from project root. Default: work/crop_plan.json.
@@ -89,6 +98,8 @@ function parseArgs(argv) {
     else if (a === '--max-batch-size') args.maxBatchSize = Number(next());
     else if (a === '--allow-large-batch') args.allowLargeBatch = true;
     else if (a === '--profile') args.profile = next();
+    else if (a === '--font-usage') args.fontUsage = next();
+    else if (a === '--font-install-decision') args.fontInstallDecision = next();
     else if (a === '--assets') args.assets = next();
     else if (a === '--icon-usage') args.iconUsage = next();
     else if (a === '--crop-plan') args.cropPlan = next();
@@ -149,6 +160,9 @@ function resolveLayout(args) {
   const pptxOut = resolveFromProject(projectRoot, args.pptxOut, path.join('out', 'deck.pptx'));
   const htmlOut = resolveFromProject(projectRoot, args.htmlOut, path.join('out', 'deck.html'));
   const profilePath = args.profile ? resolveFromProject(projectRoot, args.profile) : (process.env.DECK_PROFILE || '');
+  const fontUsagePath = args.fontUsage
+    ? resolveFromProject(projectRoot, args.fontUsage)
+    : (process.env.DECK_FONT_USAGE ? resolveFromProject(projectRoot, process.env.DECK_FONT_USAGE) : path.join(projectRoot, 'work', 'font_usage.json'));
   const iconUsagePath = args.iconUsage
     ? resolveFromProject(projectRoot, args.iconUsage)
     : (process.env.DECK_ICON_USAGE ? resolveFromProject(projectRoot, process.env.DECK_ICON_USAGE) : '');
@@ -165,6 +179,7 @@ function resolveLayout(args) {
     slidesJsPath: path.join(projectRoot, 'lib', 'slides.js'),
     buildJsPath: path.join(SCRIPT_ROOT, 'build.js'),
     enforceContractPath: path.join(SCRIPT_ROOT, 'enforce_contract.js'),
+    fontPreflightPath: path.join(SCRIPT_ROOT, 'font_preflight.js'),
     enforceReconstructionPath: path.join(SCRIPT_ROOT, 'enforce_reconstruction.js'),
     generateEvidencePath: path.join(SCRIPT_ROOT, 'generate_evidence.js'),
     finalGatePath: path.join(SCRIPT_ROOT, 'final_gate.js'),
@@ -180,11 +195,14 @@ function resolveLayout(args) {
     tracePath: path.join(projectRoot, 'out', 'render_trace.json'),
     manifestPath: path.join(projectRoot, 'assets', 'manifest.json'),
     nativeObjectManifestPath: path.join(projectRoot, 'out', 'native_object_manifest.json'),
+    fontResolutionManifestPath: path.join(projectRoot, 'out', 'font_resolution_manifest.json'),
+    fontInstallRequestPath: path.join(projectRoot, 'out', 'font_install_request.json'),
     cropCoverageSummaryPath: path.join(projectRoot, 'out', 'crop_coverage_summary.json'),
     qaEvidenceSummaryPath: path.join(projectRoot, 'out', 'qa_evidence_summary.json'),
     pptxOut,
     htmlOut,
     profilePath,
+    fontUsagePath,
     cropPlanPath: cropPlan.path,
     cropPlanSource: cropPlan.source,
   };
@@ -207,6 +225,7 @@ function validatePaths(args, layout) {
   }
   if (!fileExists(layout.buildJsPath)) errors.push(`Skill build.js not found: ${layout.buildJsPath}`);
   if (!fileExists(layout.enforceContractPath)) errors.push(`Skill enforce_contract.js not found: ${layout.enforceContractPath}`);
+  if (!fileExists(layout.fontPreflightPath)) errors.push(`Skill font_preflight.js not found: ${layout.fontPreflightPath}`);
   if (!fileExists(layout.slidesJsPath) && !args.dryRun) errors.push(`Deck lib/slides.js is missing: ${layout.slidesJsPath}`);
   if (!dirExists(layout.srcDir) && !args.qaOnly && !args.dryRun) errors.push(`Deck src/ directory is missing: ${layout.srcDir}`);
   if (!args.skipCrops && !args.qaOnly && !args.dryRun && !fileExists(layout.cropPlanPath)) {
@@ -215,6 +234,7 @@ function validatePaths(args, layout) {
   if (layout.iconUsagePath && !args.skipAssets && !args.qaOnly && !args.dryRun && !fileExists(layout.iconUsagePath)) {
     errors.push(`Icon usage manifest is missing: ${layout.iconUsagePath}`);
   }
+  if (args.fontUsage && !args.dryRun && !fileExists(layout.fontUsagePath)) errors.push(`Font usage manifest is missing: ${layout.fontUsagePath}`);
   for (const outPath of [layout.pptxOut, layout.htmlOut]) {
     if (!isInside(layout.projectRoot, outPath)) errors.push(`Output path must stay inside projectRoot: ${outPath}`);
     if (looksLikeInstalledSkillRoot(layout.skillRoot) && isInside(layout.skillRoot, outPath) && !args.selfTest) {
@@ -236,10 +256,10 @@ function hasPackage(nodeModulesDir, pkg) {
   return fileExists(path.join(packageDir(nodeModulesDir, pkg), 'package.json')) || dirExists(packageDir(nodeModulesDir, pkg));
 }
 
-function dependencyStatus(nodeModuleDirs) {
+function dependencyStatus(nodeModuleDirs, packages) {
   const dirs = nodeModuleDirs.filter(Boolean).map(p => path.resolve(p));
   const missing = [];
-  for (const pkg of REQUIRED_NODE_PACKAGES) {
+  for (const pkg of packages) {
     if (!dirs.some(dir => hasPackage(dir, pkg))) missing.push(pkg);
   }
   return { ok: missing.length === 0, missing, dirs };
@@ -251,10 +271,11 @@ function splitNodePath(value) {
 
 function resolveNodeDependencies(args, layout) {
   const searched = [];
+  const packages = requiredNodePackages(args);
   const check = (mode, source, dirs) => {
     const resolved = dirs.filter(Boolean).map(d => path.isAbsolute(d) ? path.resolve(d) : path.resolve(layout.projectRoot, d));
     searched.push({ mode, source, dirs: resolved });
-    const status = dependencyStatus(resolved);
+    const status = dependencyStatus(resolved, packages);
     return Object.assign({ mode, source, nodePathUsed: resolved.join(path.delimiter), searched }, status);
   };
 
@@ -271,7 +292,7 @@ function resolveNodeDependencies(args, layout) {
   if (project.ok) return project;
   const skill = check('skill', 'Skill-local node_modules', [path.join(layout.skillRoot, 'node_modules'), path.join(layout.scriptRoot, 'node_modules')]);
   if (skill.ok) return skill;
-  return Object.assign({}, skill, { mode: 'missing', source: 'not found', searched });
+  return Object.assign({}, skill, { mode: 'missing', source: 'not found', searched, requiredPackages:packages });
 }
 
 function dependencyError(info, layout) {
@@ -300,7 +321,11 @@ function runStep(label, cmd, argv, layout, envExtra) {
     env: Object.assign({}, process.env, envExtra || {}),
   });
   if (res.error) throw res.error;
-  if (res.status !== 0) throw new Error(`${label} failed with exit code ${res.status}`);
+  if (res.status !== 0) {
+    const err = new Error(`${label} failed with exit code ${res.status}`);
+    if (res.status === 3) err.exitCode = 3;
+    throw err;
+  }
 }
 
 function runNode(label, script, argv, layout, env) {
@@ -330,6 +355,10 @@ function baseEnv(args, layout, runId, deps) {
     SLIDE_PIPELINE_INVOKED: '1',
     SLIDE_PIPELINE_STRICT: '1',
     SLIDE_PIPELINE_ENFORCE: '1',
+    DECK_FONT_INSTALL_DECISION: args.fontInstallDecision || process.env.DECK_FONT_INSTALL_DECISION || 'ask',
+    DECK_FONT_USAGE: layout.fontUsagePath,
+    DECK_FONT_RESOLUTION_MANIFEST: layout.fontResolutionManifestPath,
+    DECK_FONT_INSTALL_REQUEST: layout.fontInstallRequestPath,
   };
   if (deps && deps.nodePathUsed) env.NODE_PATH = deps.nodePathUsed;
   if (layout.profilePath) env.DECK_PROFILE = layout.profilePath;
@@ -416,7 +445,17 @@ function validationArgs(phase, args, layout) {
   const out = ['--phase', phase, '--project', layout.projectRoot, '--target', args.target, '--trace', layout.tracePath];
   if (args.slides) out.push('--slides', args.slides);
   if (args.selfTest) out.push('--self-test');
+  if (args.qaOnly) out.push('--qa-only');
   return out;
+}
+
+function fontPreflightArgs(layout){
+  return [
+    '--project', layout.projectRoot,
+    '--font-usage', layout.fontUsagePath,
+    '--manifest', layout.fontResolutionManifestPath,
+    '--install-request', layout.fontInstallRequestPath,
+  ];
 }
 
 function computeHashes(layout) {
@@ -427,6 +466,7 @@ function computeHashes(layout) {
     kitJs: layout.kitJsPath,
     atomsPptx: layout.atomsPptxPath,
     atomsHtml: layout.atomsHtmlPath,
+    fontPreflight: layout.fontPreflightPath,
   })) {
     if (fileExists(file)) hashes[key] = sha256(file);
   }
@@ -445,6 +485,8 @@ function traceSkeleton(args, layout, runId, startTimeMs, deps) {
     commandArguments: args.raw,
     DECK_PROFILE: layout.profilePath || process.env.DECK_PROFILE || '',
     DECK_ICON_USAGE: layout.iconUsagePath || '',
+    DECK_FONT_USAGE: layout.fontUsagePath,
+    DECK_FONT_INSTALL_DECISION: args.fontInstallDecision || process.env.DECK_FONT_INSTALL_DECISION || 'ask',
     DECK_ASSETS: layout.assetsDir,
     DECK_PXW: args.pxw || process.env.DECK_PXW || '',
     DECK_PXH: args.pxh || process.env.DECK_PXH || '',
@@ -454,8 +496,11 @@ function traceSkeleton(args, layout, runId, startTimeMs, deps) {
     quality: args.quality,
     requireQa: !!args.requireQa,
     requireReconstruction: !!args.requireReconstruction,
+    qaOnly: !!args.qaOnly,
     maxBatchSize: args.maxBatchSize,
     allowLargeBatch: !!args.allowLargeBatch,
+    skipAssets:!!args.skipAssets,
+    skipCrops:!!args.skipCrops,
     skillRoot: layout.skillRoot,
     projectRoot: layout.projectRoot,
     buildJsPath: layout.buildJsPath,
@@ -463,6 +508,11 @@ function traceSkeleton(args, layout, runId, startTimeMs, deps) {
     kitJsPath: layout.kitJsPath,
     atomsPptxPath: layout.atomsPptxPath,
     atomsHtmlPath: layout.atomsHtmlPath,
+    fontPreflightPath: layout.fontPreflightPath,
+    fontUsagePath: layout.fontUsagePath,
+    fontResolutionManifestPath: layout.fontResolutionManifestPath,
+    fontResolutionManifestHash: fileExists(layout.fontResolutionManifestPath) ? sha256(layout.fontResolutionManifestPath) : '',
+    fontInstallRequestPath: layout.fontInstallRequestPath,
     pptxOut: layout.pptxOut,
     htmlOut: layout.htmlOut,
     cropPlanPath: layout.cropPlanPath,
@@ -479,8 +529,8 @@ function traceSkeleton(args, layout, runId, startTimeMs, deps) {
     nodePathUsed: deps && deps.nodePathUsed ? deps.nodePathUsed : '',
     dependencyResolutionMode: deps ? deps.mode : 'missing',
     dependencyResolutionSource: deps ? deps.source : 'not checked',
-    dependencyRequiredPackages: REQUIRED_NODE_PACKAGES,
-    dependencyMissingPackages: deps ? deps.missing : REQUIRED_NODE_PACKAGES,
+    dependencyRequiredPackages: requiredNodePackages(args),
+    dependencyMissingPackages: deps ? deps.missing : requiredNodePackages(args),
     generated: {
       pptx: target === 'pptx' || target === 'both' ? layout.pptxOut : '',
       html: target === 'html' || target === 'both' ? layout.htmlOut : '',
@@ -498,19 +548,30 @@ function traceSkeleton(args, layout, runId, startTimeMs, deps) {
     qaSummary: {},
     objectiveEvidenceSummary: {},
     buildTrace: {},
+    fontPreflight: { passed:false },
   };
 }
 
 function refreshTraceArtifacts(trace, layout) {
   trace.hashes = computeHashes(layout);
-  trace.cropPlanHash = fileExists(layout.cropPlanPath) ? sha256(layout.cropPlanPath) : '';
-  trace.cropManifestHash = fileExists(layout.manifestPath) ? sha256(layout.manifestPath) : '';
+  trace.cropPlanHash = trace.skipCrops ? '' : (fileExists(layout.cropPlanPath) ? sha256(layout.cropPlanPath) : '');
+  trace.cropManifestHash = trace.skipCrops ? '' : (fileExists(layout.manifestPath) ? sha256(layout.manifestPath) : '');
   trace.iconUsageHash = layout.iconUsagePath && fileExists(layout.iconUsagePath) ? sha256(layout.iconUsagePath) : '';
   trace.iconManifestHash = fileExists(layout.iconManifestPath) ? sha256(layout.iconManifestPath) : '';
   trace.backgroundManifestHash = fileExists(layout.backgroundManifestPath) ? sha256(layout.backgroundManifestPath) : '';
   trace.nativeObjectManifestHash = fileExists(layout.nativeObjectManifestPath) ? sha256(layout.nativeObjectManifestPath) : '';
   trace.cropCoverageSummaryHash = fileExists(layout.cropCoverageSummaryPath) ? sha256(layout.cropCoverageSummaryPath) : '';
   trace.qaEvidenceSummaryHash = fileExists(layout.qaEvidenceSummaryPath) ? sha256(layout.qaEvidenceSummaryPath) : '';
+  trace.fontResolutionManifestHash = fileExists(layout.fontResolutionManifestPath) ? sha256(layout.fontResolutionManifestPath) : '';
+  const fontManifest = readJsonIfExists(layout.fontResolutionManifestPath);
+  trace.fontResolution = fontManifest ? {
+    status:fontManifest.status,
+    originalFontCount:fontManifest.originalFontCount,
+    exactCount:fontManifest.exactCount,
+    fallbackCount:fontManifest.fallbackCount,
+    approvalRequiredCount:fontManifest.approvalRequiredCount,
+    automaticInstallationAttempted:fontManifest.automaticInstallationAttempted,
+  } : {};
   trace.objectiveEvidenceSummary = objectiveEvidenceTrace(layout);
 }
 
@@ -539,6 +600,7 @@ function main() {
   const trace = traceSkeleton(args, layout, runId, startTimeMs, deps);
 
   const plan = [
+    'font collection and system+user font resolution preflight',
     'preflight contract validation',
     args.skipAssets ? 'background/icon generation skipped' : 'background generation and icon generation',
     args.skipCrops ? 'crop generation skipped' : `crop generation from ${layout.cropPlanPath}`,
@@ -554,6 +616,9 @@ function main() {
   }
 
   try {
+    runNode('font collection/resolution preflight', layout.fontPreflightPath, fontPreflightArgs(layout), layout, env);
+    trace.fontPreflight = { passed:true, timestamp:new Date().toISOString(), manifest:layout.fontResolutionManifestPath };
+    refreshTraceArtifacts(trace, layout);
     runNode('preflight contract validation', layout.enforceContractPath, validationArgs('preflight', args, layout), layout, env);
     trace.preflightValidation = { passed: true, timestamp: new Date().toISOString() };
 
@@ -612,9 +677,5 @@ try {
   main();
 } catch (err) {
   console.error(`[slide-pipeline] ERROR: ${err.message}`);
-  process.exit(1);
+  process.exit(err.exitCode || 1);
 }
-
-
-
-

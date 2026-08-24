@@ -15,6 +15,7 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const cp = require('child_process');
 
 // ---- original hard-coded design system (backward-compatible default) -------
 const DEFAULT_C = {
@@ -69,17 +70,38 @@ function cssFontFamily(family){
   return `'${value.replace(/'/g, "\\'")}'`;
 }
 
-function fontSearchDirs(){
-  const dirs = [];
+function fontSearchLocations(){
+  const locations = [];
+  const add = (dir, scope, source) => {
+    if(!dir) return;
+    const resolved = path.resolve(dir);
+    if(!locations.some(item => item.path.toLowerCase() === resolved.toLowerCase())){
+      locations.push({ path:resolved, scope, source });
+    }
+  };
   if(process.platform === 'win32'){
     const winDir = process.env.WINDIR || 'C:\\Windows';
-    dirs.push(path.join(winDir, 'Fonts'));
+    add(path.join(winDir, 'Fonts'), 'system', 'windows-font-directory');
+    add(path.join(process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local'), 'Microsoft', 'Windows', 'Fonts'), 'user', 'windows-user-font-directory');
+    add(path.join(process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming'), 'Microsoft', 'Windows', 'Fonts'), 'user', 'windows-roaming-font-directory');
   } else if(process.platform === 'darwin'){
-    dirs.push('/System/Library/Fonts', '/Library/Fonts', path.join(os.homedir(), 'Library/Fonts'));
+    add('/System/Library/Fonts', 'system', 'macos-system-font-directory');
+    add('/Library/Fonts', 'system', 'macos-library-font-directory');
+    add(path.join(os.homedir(), 'Library/Fonts'), 'user', 'macos-user-font-directory');
   } else {
-    dirs.push('/usr/share/fonts', '/usr/local/share/fonts', path.join(os.homedir(), '.fonts'), path.join(os.homedir(), '.local/share/fonts'));
+    add('/usr/share/fonts', 'system', 'linux-system-font-directory');
+    add('/usr/local/share/fonts', 'system', 'linux-local-font-directory');
+    add(path.join(os.homedir(), '.fonts'), 'user', 'linux-user-font-directory');
+    add(path.join(os.homedir(), '.local/share/fonts'), 'user', 'linux-user-data-font-directory');
   }
-  return dirs;
+  for(const extra of String(process.env.DECK_FONT_DIRS || '').split(path.delimiter).map(v => v.trim()).filter(Boolean)){
+    add(extra, 'explicit', 'DECK_FONT_DIRS');
+  }
+  return locations;
+}
+
+function fontSearchDirs(){
+  return fontSearchLocations().map(item => item.path);
 }
 
 const FONT_FILE_HINTS = {
@@ -90,28 +112,226 @@ const FONT_FILE_HINTS = {
   'noto sans cjk kr': ['notosanscjk-regular.ttc', 'notosanscjkkR-regular.otf'],
 };
 
-function fontAvailable(family){
-  const name = String(family || '').trim();
-  if(!name || isGenericFontFamily(name)) return true;
-  const normalized = name.toLowerCase();
-  const compact = normalized.replace(/[^a-z0-9]/g, '');
-  const hints = FONT_FILE_HINTS[normalized] || [];
-  for(const dir of fontSearchDirs()){
-    let entries;
-    try { entries = fs.readdirSync(dir, { withFileTypes: true }); }
-    catch(err){ continue; }
-    const names = entries.filter(e => e.isFile()).map(e => e.name.toLowerCase());
-    if(hints.some(hint => names.includes(hint.toLowerCase()))) return true;
-    if(names.some(file => file.replace(/[^a-z0-9]/g, '').includes(compact))) return true;
+function normalizeFamilyKey(value){
+  return String(value || '').trim().replace(/^['"]|['"]$/g, '').replace(/\s+/g, ' ').toLowerCase();
+}
+
+function compactFamilyKey(value){
+  return normalizeFamilyKey(value).replace(/[^a-z0-9\u00c0-\uffff]/g, '');
+}
+
+function cleanRegistryFamily(value){
+  return String(value || '')
+    .replace(/\s+\((?:TrueType|OpenType|All res|Raster)\)\s*$/i, '')
+    .trim();
+}
+
+function windowsRegistryFonts(){
+  if(process.platform !== 'win32') return [];
+  const keys = [
+    { key:'HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Fonts', scope:'system' },
+    { key:'HKCU\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Fonts', scope:'user' },
+  ];
+  const rows = [];
+  for(const item of keys){
+    let text = '';
+    try {
+      text = cp.execFileSync('reg.exe', ['query', item.key], { encoding:'utf8', windowsHide:true, stdio:['ignore','pipe','ignore'] });
+    } catch(err){ continue; }
+    for(const line of String(text).split(/\r?\n/)){
+      const match = /^\s{2,}(.+?)\s+REG_(?:SZ|EXPAND_SZ)\s+(.+?)\s*$/.exec(line);
+      if(!match) continue;
+      const displayName = cleanRegistryFamily(match[1]);
+      const families = displayName.split(/\s*&\s*/).map(v => v.trim()).filter(Boolean);
+      for(const family of families){
+        rows.push({ family, displayName, file:match[2].trim(), scope:item.scope, source:'windows-font-registry', registryKey:item.key });
+      }
+    }
   }
-  return false;
+  return rows;
+}
+
+let FONT_INDEX_CACHE = null;
+function buildFontIndex(){
+  if(FONT_INDEX_CACHE) return FONT_INDEX_CACHE;
+  const files = [];
+  const searchedLocations = [];
+  for(const location of fontSearchLocations()){
+    const record = Object.assign({}, location, { exists:false, fileCount:0 });
+    let entries = [];
+    try {
+      entries = fs.readdirSync(location.path, { withFileTypes:true });
+      record.exists = true;
+    } catch(err){
+      record.error = err.code || err.message;
+    }
+    for(const entry of entries){
+      if(!entry.isFile() || !/\.(?:ttf|ttc|otf|woff2?)$/i.test(entry.name)) continue;
+      files.push({ name:entry.name, path:path.join(location.path, entry.name), scope:location.scope, source:location.source });
+    }
+    record.fileCount = files.filter(file => file.path.toLowerCase().startsWith(location.path.toLowerCase())).length;
+    searchedLocations.push(record);
+  }
+  FONT_INDEX_CACHE = {
+    builtAt:new Date().toISOString(),
+    searchedLocations,
+    registry:windowsRegistryFonts(),
+    files,
+  };
+  return FONT_INDEX_CACHE;
+}
+
+function resetFontIndexCache(){ FONT_INDEX_CACHE = null; }
+
+function fontAvailabilityEvidence(family){
+  const name = String(family || '').trim();
+  if(!name || isGenericFontFamily(name)){
+    return { family:name, available:true, generic:true, matches:[], searchedLocations:fontSearchLocations() };
+  }
+  const normalized = normalizeFamilyKey(name);
+  const compact = compactFamilyKey(name);
+  const hints = FONT_FILE_HINTS[normalized] || [];
+  const index = buildFontIndex();
+  const matches = [];
+  for(const row of index.registry){
+    if(normalizeFamilyKey(row.family) === normalized || normalizeFamilyKey(row.displayName) === normalized){
+      matches.push(Object.assign({ match:'registry-family-exact' }, row));
+    }
+  }
+  for(const file of index.files){
+    const lower = file.name.toLowerCase();
+    const fileCompact = compactFamilyKey(path.basename(file.name, path.extname(file.name)));
+    if(hints.some(hint => lower === hint.toLowerCase())){
+      matches.push(Object.assign({ match:'known-file-hint' }, file));
+    } else if(compact && (fileCompact === compact || fileCompact.startsWith(compact))){
+      matches.push(Object.assign({ match:'filename-family-prefix' }, file));
+    }
+  }
+  const unique = [];
+  const seen = new Set();
+  for(const match of matches){
+    const key = `${match.source}|${match.path || match.file || ''}|${match.family || ''}`.toLowerCase();
+    if(seen.has(key)) continue;
+    seen.add(key);
+    unique.push(match);
+  }
+  return {
+    family:name,
+    available:unique.length > 0,
+    generic:false,
+    scopes:Array.from(new Set(unique.map(match => match.scope).filter(Boolean))),
+    matches:unique.slice(0, 24),
+    searchedLocations:index.searchedLocations,
+    registryRowsScanned:index.registry.length,
+    fontFilesScanned:index.files.length,
+  };
+}
+
+function fontAvailable(family){
+  return fontAvailabilityEvidence(family).available;
+}
+
+function compactFontEvidence(evidence){
+  return {
+    family:evidence.family,
+    available:!!evidence.available,
+    generic:!!evidence.generic,
+    scopes:evidence.scopes || [],
+    matches:(evidence.matches || []).slice(0, 8),
+    registryRowsScanned:evidence.registryRowsScanned || 0,
+    fontFilesScanned:evidence.fontFilesScanned || 0,
+  };
 }
 
 function fontListFromEnv(name){
   return splitFontFamilies(process.env[name] || '');
 }
 
-function resolveFontPolicy(profile){
+const FONT_INSTALL_DECISIONS = new Set(['ask', 'approved', 'declined', 'unavailable', 'installed']);
+
+function fontInstallDecision(){
+  const value = String(process.env.DECK_FONT_INSTALL_DECISION || 'ask').trim().toLowerCase();
+  if(!FONT_INSTALL_DECISIONS.has(value)){
+    throw new Error(`Invalid DECK_FONT_INSTALL_DECISION "${value}". Expected ask, approved, declined, unavailable, or installed.`);
+  }
+  return value;
+}
+
+function approvalRequiredError(original){
+  const err = new Error(`FONT_INSTALL_APPROVAL_REQUIRED: Original font "${original}" is not installed. Automatic installation is forbidden. Ask the user whether to install it; if installation is declined or unavailable, rerun with DECK_FONT_INSTALL_DECISION=declined or unavailable so conversion can continue with an explicit fallback mapping.`);
+  err.code = 'FONT_INSTALL_APPROVAL_REQUIRED';
+  err.originalFont = original;
+  return err;
+}
+
+function resolveFontMapping(original, options={}){
+  const requested = String(original || '').trim() || DEFAULT_FONT;
+  const decision = options.installDecision || fontInstallDecision();
+  const requestedEvidence = fontAvailabilityEvidence(requested);
+  if(requestedEvidence.available){
+    return {
+      original:requested,
+      resolved:requested,
+      exact:true,
+      fallbackApplied:false,
+      status:'exact',
+      approvalRequired:false,
+      installDecision:decision,
+      automaticInstallationAttempted:false,
+      evidence:compactFontEvidence(requestedEvidence),
+    };
+  }
+
+  if(decision === 'ask' || decision === 'approved'){
+    const pending = {
+      original:requested,
+      resolved:null,
+      exact:false,
+      fallbackApplied:false,
+      status:'approval-required',
+      approvalRequired:true,
+      installDecision:decision,
+      automaticInstallationAttempted:false,
+      evidence:compactFontEvidence(requestedEvidence),
+      nextAction:decision === 'approved'
+        ? 'Install the font outside this workflow, then rerun. If installation cannot be completed, rerun with decision unavailable.'
+        : 'Ask the user whether to install the font. Do not install automatically.',
+    };
+    if(options.allowPending) return pending;
+    throw approvalRequiredError(requested);
+  }
+
+  const candidates = Array.from(new Set((options.fallbackCandidates || []).concat(FONT_FALLBACKS).map(v => String(v || '').trim()).filter(v => v && normalizeFamilyKey(v) !== normalizeFamilyKey(requested))));
+  let resolved = null;
+  let resolvedEvidence = null;
+  for(const candidate of candidates){
+    const evidence = fontAvailabilityEvidence(candidate);
+    if(evidence.available){ resolved = candidate; resolvedEvidence = evidence; break; }
+  }
+  if(!resolved){
+    resolved = candidates[0] || FONT_FALLBACKS[0];
+    resolvedEvidence = fontAvailabilityEvidence(resolved);
+  }
+  return {
+    original:requested,
+    resolved,
+    exact:false,
+    fallbackApplied:true,
+    status:'fallback',
+    approvalRequired:false,
+    installDecision:decision,
+    automaticInstallationAttempted:false,
+    fallbackReason:decision === 'declined'
+      ? 'User declined font installation; conversion continues with fallback.'
+      : decision === 'installed'
+        ? 'User reported installation, but the original font was still not detected; conversion continues with fallback.'
+        : 'Font installation is unavailable; conversion continues with fallback.',
+    evidence:compactFontEvidence(requestedEvidence),
+    resolvedEvidence:compactFontEvidence(resolvedEvidence),
+  };
+}
+
+function resolveFontPolicy(profile, options={}){
   const profileFamilies = splitFontFamilies(profile && profile.typography && profile.typography.family);
   const requested = (process.env.DECK_FONT || profileFamilies.find(f => !isGenericFontFamily(f)) || DEFAULT_FONT).trim();
   const envFallbacks = fontListFromEnv('DECK_FONT_FALLBACK');
@@ -121,36 +341,42 @@ function resolveFontPolicy(profile){
     ...FONT_FALLBACKS,
     ...profileFamilies.filter(f => !isGenericFontFamily(f)),
   ].filter(Boolean);
-  const checked = {};
-  let resolved = null;
-  for(const candidate of candidates){
-    if(checked[candidate] == null) checked[candidate] = fontAvailable(candidate);
-    if(checked[candidate]){
-      resolved = candidate;
-      break;
-    }
-  }
-  if(!resolved && process.env.DECK_FONT_STRICT === '1'){
-    throw new Error(`Requested deck font "${requested}" is not available locally. Install it for PPTX rasterization or set DECK_FONT_FALLBACK to a locally installed font.`);
-  }
-  if(!resolved){
-    resolved = envFallbacks[0] || FONT_FALLBACKS[0];
-    if(checked[resolved] == null) checked[resolved] = fontAvailable(resolved);
-  }
-  const fallbackApplied = resolved !== requested;
+  const checked = Object.fromEntries(candidates.map(candidate => [candidate, fontAvailable(candidate)]));
+  const mapping = resolveFontMapping(requested, {
+    allowPending:!!options.allowPending,
+    installDecision:options.installDecision,
+    fallbackCandidates:candidates.slice(1),
+  });
+  const resolved = mapping.resolved;
+  const fallbackApplied = !!mapping.fallbackApplied;
   const generic = profileFamilies.filter(isGenericFontFamily);
-  const htmlFamilies = Array.from(new Set([resolved, ...candidates.filter(f => f !== resolved && checked[f]), ...generic, 'sans-serif']));
+  const htmlFamilies = Array.from(new Set([resolved, ...candidates.filter(f => f !== resolved && checked[f]), ...generic, 'sans-serif'].filter(Boolean)));
   return {
-    schemaVersion: 'slide-image-dual-render.font-policy.v1',
+    schemaVersion: 'slide-image-dual-render.font-policy.v2',
+    original:requested,
     requested,
     resolved,
     fallbackApplied,
-    fallbackReason: fallbackApplied ? `Requested font "${requested}" was not verified as locally available; using "${resolved}" for both PPTX and HTML.` : null,
-    strict: process.env.DECK_FONT_STRICT === '1',
+    fallbackReason:mapping.fallbackReason || null,
+    status:mapping.approvalRequired ? 'USER_DECISION_REQUIRED' : 'PASS',
+    approvalRequired:!!mapping.approvalRequired,
+    installDecision:mapping.installDecision,
+    installPolicy:'ask-user-before-install; automatic-installation-forbidden',
+    automaticInstallationAttempted:false,
+    conversionPolicy:'exact-if-installed; fallback-after-user-decline-or-install-unavailable; never-stop-after-decision',
+    strict:false,
+    legacyStrictIgnored:process.env.DECK_FONT_STRICT === '1',
     checked,
     htmlCssFamily: htmlFamilies.map(cssFontFamily).join(', '),
     webFontImportsEnabled: false,
     webFontPolicy: 'disabled-for-pptx-html-parity',
+    mappings:[mapping],
+    search: {
+      systemAndUserFontsScanned:true,
+      locations:buildFontIndex().searchedLocations,
+      registryRowsScanned:buildFontIndex().registry.length,
+      fontFilesScanned:buildFontIndex().files.length,
+    },
   };
 }
 
@@ -251,8 +477,10 @@ function paletteC(profile){
 }
 
 module.exports = {
-  loadProfile, paletteC, fontOf, resolveFontPolicy, fontAvailable,
+  loadProfile, paletteC, fontOf, resolveFontPolicy, resolveFontMapping,
+  fontAvailable, fontAvailabilityEvidence, fontSearchDirs, fontSearchLocations,
+  fontInstallDecision, approvalRequiredError, resetFontIndexCache,
   bgType, isDarkProfile, isLightProfile,
   DEFAULT_C, DEFAULT_FONT,
-  _helpers: { strip, isHex, toRgb, toHex, mix, lighten, darken, parseColor, solidOver, pick, splitFontFamilies, cssFontFamily },
+  _helpers: { strip, isHex, toRgb, toHex, mix, lighten, darken, parseColor, solidOver, pick, splitFontFamilies, cssFontFamily, normalizeFamilyKey, compactFamilyKey },
 };

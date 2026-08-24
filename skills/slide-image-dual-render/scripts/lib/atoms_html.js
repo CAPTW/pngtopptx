@@ -2,7 +2,8 @@
 // Produces a <div class="slide"> with absolutely-positioned children.
 const fs = require('fs');
 const OM = require('./object_manifest');
-const { PXW, PXH, FONT_POLICY } = require('./kit');
+const { PXW, PXH, FONT_POLICY, resolveRenderFont, fontMappingFor } = require('./kit');
+const { _helpers } = require('./profile');
 
 const SW = 13.333;
 const PT2PX = PXW / SW / 72;
@@ -49,10 +50,15 @@ function normalizeLineGeom(x,y,w,h){
   return { x:nx, y:ny, w:Math.max(nw, 0.25), h:Math.max(nh, 0.25), orientation:'diagonal' };
 }
 
-function runHTML(content, baseColor){
+function cssStack(original){
+  const resolved = resolveRenderFont(original);
+  return `${_helpers.cssFontFamily(resolved)}, sans-serif`;
+}
+
+function runHTML(content, baseColor, baseFont){
   if(Array.isArray(content)){
     return content.map(r=>{
-      const st = `color:#${(r.color||baseColor)};${r.bold?'font-weight:700;':''}${r.italic?'font-style:italic;':''}`;
+      const st = `color:#${(r.color||baseColor)};font-family:${cssStack(r.fontFace||r.fontFamily||baseFont)};${r.bold?'font-weight:700;':''}${r.italic?'font-style:italic;':''}`;
       return `<span style="${st}">${esc(r.text)}</span>${r.breakLine?'<br>':''}`;
     }).join('');
   }
@@ -104,7 +110,12 @@ function makeHtmlSurface(){
       }
     },
     txt(content, x,y,w,h, o={}){
-      OM.recordText(content, x,y,w,h,'surface.txt');
+      const originalFont = o.fontFace||o.fontFamily||FONT_POLICY.resolved;
+      const resolvedFont = resolveRenderFont(originalFont);
+      const mappings = Array.isArray(content)
+        ? content.map(r => fontMappingFor(r.fontFace||r.fontFamily||originalFont))
+        : [fontMappingFor(originalFont)];
+      OM.recordText(content, x,y,w,h,'surface.txt', { originalFont, resolvedFont, fontMappings:mappings });
       const fpx = (o.sz||12) * PT2PX;
       const ai = o.valign==='top'?'flex-start':o.valign==='bottom'?'flex-end':'center';
       const jc = o.align==='center'?'center':o.align==='right'?'flex-end':'flex-start';
@@ -112,9 +123,9 @@ function makeHtmlSurface(){
       const ws = (o.wrap===false || o.shrink) ? 'white-space:nowrap;' : '';
       const ls = o.cs!=null ? `letter-spacing:${o.cs}px;` : '';
       const innerWs = o.shrink ? 'white-space:nowrap;' : '';
-      const inner = `<div style="width:100%;text-align:${ta};line-height:${o.lh!=null?o.lh:1.0};${ls}${innerWs}">${runHTML(content, o.color||'F2F7FC')}</div>`;
+      const inner = `<div style="width:100%;text-align:${ta};line-height:${o.lh!=null?o.lh:1.0};${ls}${innerWs}">${runHTML(content, o.color||'F2F7FC', originalFont)}</div>`;
       const sa = o.shrink ? ' data-shrink="1"' : '';
-      parts.push(`<div${sa} style="position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;display:flex;align-items:${ai};justify-content:${jc};overflow:hidden;font-family:${FONT_STACK};font-size:${fpx.toFixed(1)}px;color:#${o.color||'F2F7FC'};${o.bold?'font-weight:700;':''}${o.italic?'font-style:italic;':''}${ws}box-sizing:border-box;">${inner}</div>`);
+      parts.push(`<div${sa} data-original-font="${esc(originalFont)}" data-resolved-font="${esc(resolvedFont)}" style="position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;display:flex;align-items:${ai};justify-content:${jc};overflow:hidden;font-family:${cssStack(originalFont)};font-size:${fpx.toFixed(1)}px;color:#${o.color||'F2F7FC'};${o.bold?'font-weight:700;':''}${o.italic?'font-style:italic;':''}${ws}box-sizing:border-box;">${inner}</div>`);
     },
   };
   return S;

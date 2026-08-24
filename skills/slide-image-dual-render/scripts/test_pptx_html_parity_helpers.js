@@ -5,8 +5,9 @@ process.env.DECK_PXW = process.env.DECK_PXW || "1672";
 process.env.DECK_PXH = process.env.DECK_PXH || "941";
 
 const assert = require("assert");
-const { makeHtmlSurface, normalizeLineGeom, lineWidthPx, FONT_STACK } = require("./lib/atoms_html");
+const { makeHtmlSurface, normalizeLineGeom, lineWidthPx } = require("./lib/atoms_html");
 const { safeLineGeom, linePt } = require("./lib/atoms_pptx");
+const { FONT_POLICY } = require("./lib/kit");
 
 function approx(actual, expected, tolerance, message) {
   assert(Math.abs(actual - expected) <= tolerance, `${message}: expected ${expected}, got ${actual}`);
@@ -40,6 +41,7 @@ assert(html.includes("left:300px;top:438px;width:400px;height:0;border-top:2px d
 assert(html.includes("left:230px;top:710px;height:125px;width:0;border-left:1px solid #33A9E0"), "negative vertical rule should normalize");
 assert(html.includes("height:48px"), "text helper should preserve explicit box height");
 assert(html.includes("line-height:1.15"), "text helper should preserve line-height metadata");
-assert(html.includes(`font-family:${FONT_STACK}`), "HTML text should use resolved shared font stack");
+assert(html.includes(`data-original-font="${FONT_POLICY.resolved}"`), "HTML text should record the original font");
+assert(html.includes(`data-resolved-font="${FONT_POLICY.resolved}"`), "HTML text should record the resolved font");
 
 console.log(JSON.stringify({ status: "ok", tests: 13 }, null, 2));
