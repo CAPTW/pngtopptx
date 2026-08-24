@@ -1,123 +1,26 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>pngtopptx Slide Reconstruction Toolkit</title>
-  <style>
-    :root {
-      color-scheme: dark;
-      --bg: #08111f;
-      --panel: #0f1d30;
-      --line: #29445f;
-      --text: #eef5fb;
-      --muted: #a9bac9;
-      --cyan: #2ed3f2;
-      --green: #9edb5f;
-      --amber: #f5b73f;
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      background: radial-gradient(circle at 25% 0%, #112642 0, #08111f 46%, #050914 100%);
-      color: var(--text);
-      font: 16px/1.5 Arial, "Segoe UI", sans-serif;
-    }
-    main { max-width: 1120px; margin: 0 auto; padding: 44px 24px 64px; }
-    h1 { margin: 0 0 10px; font-size: clamp(34px, 5vw, 58px); line-height: 1.04; letter-spacing: 0; }
-    h2 { margin: 34px 0 14px; font-size: 24px; }
-    p { color: var(--muted); max-width: 860px; }
-    a { color: var(--cyan); text-decoration: none; }
-    a:hover { text-decoration: underline; }
-    .hero {
-      min-height: 56vh;
-      display: grid;
-      align-content: center;
-      border-bottom: 1px solid rgba(255,255,255,.12);
-    }
-    .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
-    .button {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 10px 14px;
-      background: rgba(12, 30, 50, .75);
-      color: var(--text);
-      font-weight: 700;
-    }
-    .primary { border-color: var(--cyan); color: #03121c; background: var(--cyan); }
-    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
-    .card {
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: rgba(15,29,48,.78);
-      padding: 16px;
-    }
-    .metric { font-size: 28px; color: var(--green); font-weight: 800; }
-    code {
-      color: var(--amber);
-      background: rgba(255,255,255,.06);
-      padding: 2px 5px;
-      border-radius: 4px;
-    }
-    pre {
-      overflow-x: auto;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: #06101c;
-      padding: 14px;
-      color: #dbe9f5;
-    }
-    @media (max-width: 820px) {
-      .grid { grid-template-columns: 1fr; }
-      main { padding: 30px 18px 46px; }
-    }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Reconstruct slide PNGs into editable PPTX and standalone HTML with native objects, font provenance, declared crops, and visual QA.">
+<meta name="theme-color" content="#08090d">
+<title>pngtopptx — Reconstruction, not flattening.</title>
+<style>
+:root{color-scheme:dark;--bg:#08090d;--panel:#12151e;--text:#f7f7fb;--muted:#a8adbb;--line:#ffffff1d;--violet:#9d7bff;--orange:#ff8a4c;--max:1160px}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;min-width:320px;background:radial-gradient(circle at 12% 0,#7c3aed40,transparent 35%),radial-gradient(circle at 92% 8%,#ff8a4c24,transparent 30%),var(--bg);color:var(--text);font:16px/1.6 Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}body:before{position:fixed;inset:0;z-index:-1;content:"";opacity:.16;background-image:linear-gradient(#ffffff09 1px,transparent 1px),linear-gradient(90deg,#ffffff09 1px,transparent 1px);background-size:44px 44px;mask-image:linear-gradient(#000,transparent 85%)}a{color:inherit;text-decoration:none}.shell{width:min(calc(100% - 40px),var(--max));margin:auto}header{position:sticky;top:0;z-index:10;border-bottom:1px solid #ffffff12;background:#08090dcc;backdrop-filter:blur(16px)}nav{min-height:70px;display:flex;align-items:center;justify-content:space-between;gap:22px}.brand{display:flex;align-items:center;gap:10px;font-weight:850;letter-spacing:-.03em}.mark{width:28px;height:28px;border:1px solid #ffffff38;border-radius:9px;background:linear-gradient(135deg,#b69cff,#7c3aed 55%,#ff8a4c);box-shadow:0 0 28px #9d7bff55}.links{display:flex;align-items:center;gap:22px;color:var(--muted);font-size:14px}.button{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:0 18px;border:1px solid var(--line);border-radius:13px;background:#ffffff0c;font-weight:750;transition:.18s}.button:hover,.button:focus-visible{transform:translateY(-1px);background:#ffffff16;border-color:#ffffff40}.primary{border:0;background:linear-gradient(135deg,#aa8cff,#7c3aed 65%);box-shadow:0 16px 44px #7c3aed45}.hero{min-height:calc(100vh - 70px);padding:82px 0 70px;display:grid;grid-template-columns:.9fr 1.1fr;align-items:center;gap:clamp(42px,7vw,90px)}h1,h2,h3,p{margin-top:0}h1{margin-bottom:24px;font-size:clamp(48px,6.4vw,86px);line-height:.98;letter-spacing:-.065em}h1 span{color:transparent;background:linear-gradient(100deg,#fff,#d9cfff 50%,#ffb48a);background-clip:text}.lede{max-width:660px;margin-bottom:30px;color:var(--muted);font-size:clamp(18px,1.8vw,22px)}.actions{display:flex;flex-wrap:wrap;gap:12px}.micro{margin:18px 0 0;color:#7e8494;font-size:13px}.proof{position:relative;padding:11px;overflow:hidden;border:1px solid #ffffff25;border-radius:24px;background:linear-gradient(145deg,#ffffff1c,#ffffff08);box-shadow:0 30px 90px #0008;transform:perspective(1400px) rotateY(-3deg)}.proof img{display:block;width:100%;border-radius:15px}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;margin-bottom:80px;overflow:hidden;border:1px solid var(--line);border-radius:18px;background:var(--line)}.stat{min-height:124px;padding:22px;background:#0d0f15}.stat b{display:block;margin-bottom:5px;font-size:27px;letter-spacing:-.04em}.stat span{color:var(--muted);font-size:13px}section{padding:84px 0}.intro{max-width:760px;margin-bottom:42px}.intro h2{margin-bottom:16px;font-size:clamp(36px,4.2vw,56px);line-height:1.05;letter-spacing:-.05em}.intro p{color:var(--muted);font-size:18px}.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}.card{min-height:265px;padding:27px;border:1px solid var(--line);border-radius:21px;background:linear-gradient(150deg,#ffffff12,#ffffff06)}.card small{color:var(--violet);font:13px "SFMono-Regular",Consolas,monospace}.card h3{margin:54px 0 12px;font-size:24px;letter-spacing:-.035em}.card p{margin:0;color:var(--muted)}.workflow{display:grid;grid-template-columns:.9fr 1.1fr;gap:36px}.steps{border-top:1px solid var(--line)}.step{display:grid;grid-template-columns:42px 1fr;gap:14px;padding:20px 0;border-bottom:1px solid var(--line)}.step>span{color:var(--orange);font:13px "SFMono-Regular",Consolas,monospace}.step b{display:block;margin-bottom:3px}.step em{color:var(--muted);font-style:normal;font-size:14px}.release{padding:clamp(34px,6vw,68px);border:1px solid #9d7bff55;border-radius:29px;background:radial-gradient(circle at 87% 16%,#ff8a4c2a,transparent 30%),linear-gradient(135deg,#7c3aed32,#12141d 50%);box-shadow:0 30px 90px #0007}.release h2{max-width:800px;margin-bottom:18px;font-size:clamp(34px,4vw,54px);line-height:1.06;letter-spacing:-.05em}.release p{max-width:760px;color:var(--muted);font-size:18px}.release ul{display:grid;grid-template-columns:repeat(2,1fr);gap:12px 24px;margin:28px 0 34px;padding:0;list-style:none}.release li:before{content:"↳ ";color:#5ee7f7}code{padding:.12em .34em;border:1px solid var(--line);border-radius:6px;background:#ffffff0b;color:#e8dcff}footer{padding:54px 0 70px;color:#777d8c;font-size:13px}.foot{display:flex;justify-content:space-between;gap:20px;padding-top:28px;border-top:1px solid var(--line)}.foot div{display:flex;flex-wrap:wrap;gap:18px}@media(max-width:900px){.links>a:not(.button){display:none}.hero,.workflow{grid-template-columns:1fr}.hero{min-height:auto}.proof{transform:none}.stats{grid-template-columns:repeat(2,1fr)}.cards{grid-template-columns:1fr}.card{min-height:auto}.card h3{margin-top:30px}}@media(max-width:560px){.shell{width:calc(100% - 28px)}.hero{padding:55px 0}h1{font-size:48px}.stats,.release ul{grid-template-columns:1fr}section{padding:62px 0}.foot{flex-direction:column}}@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important}}
+</style>
 </head>
 <body>
-  <main>
-    <section class="hero">
-      <h1>pngtopptx</h1>
-      <p>
-        A local slide reconstruction toolkit for reconstructing slide screenshots and exported
-        PNGs into editable PowerPoint decks. It is designed for dense technical
-        slides with tables, callouts, panels, icons, and diagrams.
-      </p>
-      <div class="actions">
-        <a class="button primary" href="QUICKSTART.md">Quick Install</a>
-        <a class="button" href="examples/generated-cooling-loop/">View Example</a>
-        <a class="button" href="examples/generated-cooling-loop/editable-reconstruction.pptx">Download Example PPTX</a>
-      </div>
-    </section>
-
-    <h2>What To Try First</h2>
-    <div class="grid">
-      <div class="card">
-        <div class="metric">1</div>
-        <p>Download the repository ZIP, extract it, and open PowerShell in the folder.</p>
-      </div>
-      <div class="card">
-        <div class="metric">2</div>
-        <p>Run the recommended installer with backup.</p>
-      </div>
-      <div class="card">
-        <div class="metric">3</div>
-        <p>Restart the shell and ask it to use <code>$slide-editable-deck-orchestrator</code>.</p>
-      </div>
-    </div>
-
-    <h2>Recommended Install Command</h2>
-    <pre>powershell -ExecutionPolicy Bypass -File .\install.ps1 -BackupExisting -Force</pre>
-
-    <h2>Public Validation Example</h2>
-    <p>
-      The dense cooling-loop example includes the source image, editable PPTX,
-      comparison contact sheet, visual QA summary, and a browser-readable report.
-      It is a success case for editable reconstruction and package validity, with
-      strict visual QA limitations documented honestly.
-    </p>
-  </main>
+<header><nav class="shell"><a class="brand" href="#top"><span class="mark" aria-hidden="true"></span>pngtopptx <small>v0.2.1</small></a><div class="links"><a href="#trust">Trust contract</a><a href="#workflow">Workflow</a><a href="README.md">Docs</a><a class="button" href="QUICKSTART.md">Quickstart</a></div></nav></header>
+<main id="top">
+<div class="shell">
+<section class="hero" aria-labelledby="hero-title"><div><h1 id="hero-title"><span>Reconstruction,</span><br>not flattening.</h1><p class="lede">Turn slide screenshots and AI-generated PNGs into editable PowerPoint decks and self-contained HTML — with native objects, font provenance, declared raster crops, visual QA, and a final delivery gate.</p><div class="actions"><a class="button primary" href="examples/generated-cooling-loop/">View the proof</a><a class="button" href="examples/generated-cooling-loop/editable-reconstruction.pptx">Download sample PPTX</a></div><p class="micro">Your AI made the slide. <b>pngtopptx</b> makes the handoff editable.</p></div><a class="proof" href="examples/generated-cooling-loop/" aria-label="Open the generated cooling-loop comparison case"><img src="examples/generated-cooling-loop/comparison-contact-sheet.png" alt="Source, editable PowerPoint, HTML, and visual-difference comparison"></a></section>
+<div class="stats" aria-label="Public example evidence"><div class="stat"><b>659</b><span>editable or placed objects</span></div><div class="stat"><b>0%</b><span>source-crop coverage</span></div><div class="stat"><b>0 / 0</b><span>PPTX package errors / warnings</span></div><div class="stat"><b>Public</b><span>strict pixel-QA failure retained</span></div></div>
+</div>
+<section id="trust"><div class="shell"><div class="intro"><h2>A deck that can explain what it is.</h2><p>Editability, raster preservation, typography, package validity, and visual similarity remain separate, reviewable claims.</p></div><div class="cards"><article class="card"><small>01 / NATIVE</small><h3>Editable by construction</h3><p>Titles, panels, tables, labels, icons, callouts, and diagram primitives become independent objects wherever practical.</p></article><article class="card"><small>02 / HONEST</small><h3>Raster, but declared</h3><p>Continuous-tone regions remain explicit crops with reasons and coverage evidence — never hidden behind a “fully editable” claim.</p></article><article class="card"><small>03 / TRACEABLE</small><h3>Fonts with receipts</h3><p>Every Original → Resolved mapping is recorded. Missing fonts trigger a user decision; no silent install occurs.</p></article></div></div></section>
+<section id="workflow"><div class="shell workflow"><div class="intro"><h2>One slide definition. Two deliverables. Evidence in between.</h2><p>A backend-agnostic authoring layer replays source-pixel geometry through native PPTX and HTML surfaces, then sends both through bounded QA and repair.</p><a class="button" href="README.md#how-it-works">Read the architecture</a></div><div class="steps"><div class="step"><span>01</span><div><b>Study and classify</b><em>Measure the source and pin a frozen style grammar.</em></div></div><div class="step"><span>02</span><div><b>Reconstruct honestly</b><em>Build native objects and declare unrecreatable crops.</em></div></div><div class="step"><span>03</span><div><b>Render twice</b><em>Generate PPTX and HTML from the same slide program.</em></div></div><div class="step"><span>04</span><div><b>Gate and repair</b><em>Compare, validate, and retain uncomfortable evidence.</em></div></div></div></div></section>
+<section><div class="shell"><div class="release"><h2>v0.2.1 makes typography provenance deterministic per slide.</h2><p>Each isolated worker authors a validated <code>font_usage.json</code>. The central integrator merges those artifacts before font preflight, turning a hidden dependency into explicit evidence.</p><ul><li>Windows system and per-user font discovery</li><li>Auditable Original → Resolved mappings</li><li>User-gated missing-font decisions</li><li>On-demand icons and cached QA</li><li>Hash-preserving <code>--qa-only</code></li><li>Deterministic per-slide integration</li></ul><div class="actions"><a class="button primary" href="QUICKSTART.md">Install the Skillset</a><a class="button" href="CHANGELOG.md">Read the changelog</a><a class="button" href="https://github.com/CAPTW/pngtopptx">Open on GitHub</a></div></div></div></section>
+</main>
+<footer><div class="shell foot"><span>Local-first slide reconstruction for the handoff after AI generation.</span><div><a href="README.md">Docs</a><a href="INSTALL.md">Install</a><a href="VERIFY.md">Verify</a><a href="LICENSE">MIT License</a></div></div></footer>
 </body>
 </html>

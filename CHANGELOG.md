@@ -3,6 +3,8 @@
 ## 0.2.1
 
 - Added validated per-slide `font_usage.json` authoring artifacts and deterministic deck-level font manifest merging before font preflight.
+- Reframed the public documentation around editable reconstruction, declared raster regions, font provenance, visible QA evidence, and one consistent install-root model.
+- Replaced the abbreviated license notice with the canonical MIT License text for reliable repository license detection.
 
 ## 0.2.0
 
@@ -14,5 +16,4 @@
 ## 0.1.0
 
 - Initial portable package for the editable PPTX slide reconstruction toolkit.
-- Includes four local modules: text-layer preprocessing, dual PPTX/HTML
-  reconstruction, visual polish QA, and orchestration.
+- Includes four local modules: text-layer preprocessing, dual PPTX/HTML reconstruction, visual polish QA, and orchestration.

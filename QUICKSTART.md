@@ -1,20 +1,52 @@
 # Quickstart
 
-1. Download the repository ZIP from GitHub and extract it.
-2. Open PowerShell in the extracted folder.
-3. Install the toolkit:
+Get the four-Skill `pngtopptx` toolkit installed, verified, and ready for a separate deck project.
+
+## 1. Get the repository
+
+Clone it:
+
+```powershell
+git clone https://github.com/CAPTW/pngtopptx.git
+cd pngtopptx
+```
+
+Or download the repository ZIP from GitHub, extract it, and open PowerShell in the extracted folder.
+
+## 2. Choose one Skill root
+
+### Default portable install
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\install.ps1 -BackupExisting -Force
-```
-
-4. Verify the install:
-
-```powershell
 powershell -ExecutionPolicy Bypass -File .\verify_install.ps1
 ```
 
-5. Create a separate deck project and install runtime packages:
+Default location:
+
+```text
+%USERPROFILE%\.pngtopptx\skills
+```
+
+### Codex-native or another custom Skill root
+
+```powershell
+$skillRoot = Join-Path $env:USERPROFILE ".codex\skills"
+
+powershell -ExecutionPolicy Bypass -File .\install.ps1 `
+  -TargetRoot $skillRoot `
+  -BackupExisting `
+  -Force
+
+powershell -ExecutionPolicy Bypass -File .\verify_install.ps1 `
+  -TargetRoot $skillRoot
+```
+
+Use the same `-TargetRoot` for installation, verification, and later script commands. The toolkit never switches roots implicitly.
+
+## 3. Create a separate deck project
+
+Do not create real conversion outputs inside the repository or installed Skill directory.
 
 ```powershell
 mkdir deck
@@ -23,8 +55,10 @@ mkdir src, assets, work, out, lib
 npm i pptxgenjs sharp react react-dom react-icons
 ```
 
-6. Copy slide images into `src/`, then run the renderer scripts from the installed
-   toolkit path shown by the installer.
+Copy source slide images into `src/` as `slide1.png`, `slide2.png`, and so on.
 
-See [README.md](README.md) for a full command example and [INSTALL.md](INSTALL.md)
-for custom install paths.
+## 4. Start with the orchestrator
+
+Use [`slide-editable-deck-orchestrator`](skills/slide-editable-deck-orchestrator/SKILL.md) for an end-to-end conversion. It coordinates optional text-layer cleanup, dual PPTX/HTML reconstruction, visual QA, repair waves, and final delivery gates.
+
+For direct renderer commands, quality modes, font decisions, crop plans, and `--qa-only`, continue with the [README](README.md) and [`slide-image-dual-render`](skills/slide-image-dual-render/SKILL.md).
