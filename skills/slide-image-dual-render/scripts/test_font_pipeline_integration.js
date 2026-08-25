@@ -115,6 +115,26 @@ try {
     assert.strictEqual(request.status, 'USER_DECISION_REQUIRED');
     assert.strictEqual(request.automaticInstallationAttempted, false);
 
+    fs.mkdirSync(path.join(pendingRoot, 'config'), { recursive:true });
+    fs.writeFileSync(path.join(pendingRoot, 'config', 'font_install_policy.json'), JSON.stringify({
+      schemaVersion:'slide-image-dual-render.font-install-policy.v1',
+      authorization:'always',
+      userPromptRequired:false,
+      installation:{ allowed:true, trustedSourcesOnly:true, recordSourceUrl:true, recordPackageSha256:true },
+      unavailableAction:'fallback-and-continue',
+      conversionMustContinue:true,
+    }, null, 2), 'utf8');
+    const authorizedEnv = Object.assign({}, env);
+    delete authorizedEnv.DECK_FONT_INSTALL_DECISION;
+    const authorized = cp.spawnSync(process.execPath, [
+      pipeline, '--project', pendingRoot, '--slides', '1', '--quality', 'canary',
+      '--target', 'both', '--skip-assets', '--skip-crops', '--node-path', nodeModules,
+    ], { env:authorizedEnv, encoding:'utf8' });
+    assert.strictEqual(authorized.status, 3, `Preauthorized policy must pause for trusted-source installation rather than ask again:\n${authorized.stdout}\n${authorized.stderr}`);
+    const authorizedRequest = JSON.parse(fs.readFileSync(path.join(pendingRoot, 'out', 'font_install_request.json'), 'utf8'));
+    assert.strictEqual(authorizedRequest.status, 'INSTALL_AUTHORIZED');
+    assert.strictEqual(authorizedRequest.userQuestion, null);
+
     const declined = cp.spawnSync(process.execPath, [
       pipeline, '--project', pendingRoot, '--slides', '1', '--quality', 'canary',
       '--target', 'both', '--skip-assets', '--skip-crops', '--node-path', nodeModules,
@@ -129,7 +149,7 @@ try {
     fs.rmSync(pendingRoot, { recursive:true, force:true });
   }
 
-  console.log(JSON.stringify({ status:'ok', exactMapping:'Pretendard -> Pretendard', missingFontDecision:'exit 3 before render', declinedDecision:'fallback and conversion passed', qaOnly:'validated without rebuilding', finalGate:'passed' }, null, 2));
+  console.log(JSON.stringify({ status:'ok', exactMapping:'Pretendard -> Pretendard', missingFontDecision:'exit 3 before render', preauthorizedDecision:'trusted-source install authorized without repeat question', declinedDecision:'fallback and conversion passed', qaOnly:'validated without rebuilding', finalGate:'passed' }, null, 2));
 } finally {
   fs.rmSync(root, { recursive:true, force:true });
 }

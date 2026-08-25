@@ -47,7 +47,7 @@ Despite the name, this is **not a one-click OCR converter**. It is a production-
 | **Best fit** | Dense technical, educational, operational, and infographic slides |
 | **Authoring model** | Source-pixel coordinates replayed through one backend-agnostic renderer |
 | **Editability policy** | Native objects where practical; declared crops where necessary |
-| **Font policy** | Auditable `Original → Resolved` mappings; no silent font installation |
+| **Font policy** | Auditable `Original → Resolved` mappings; optional trusted-source preauthorization, never silent resolution |
 | **QA policy** | Visual comparison, package validation, reconstruction gates, final gate |
 | **Automation model** | One-slide-per-context workers with deterministic central integration |
 | **Runtime** | Local, Windows-first, Node.js 20+, Python 3.10+ |
@@ -68,13 +68,22 @@ Photographs, document facsimiles, complex 3D renders, and other continuous-tone 
 
 The workflow collects original font usage, searches both system-wide and per-user Windows font locations, resolves the exact local font when available, and records every `Original → Resolved` mapping.
 
-A missing font pauses for a user decision. The toolkit never installs a font automatically.
+A missing font pauses before render. By default it asks for a user decision. A project may instead
+preauthorize trusted-source installation with `config/font_install_policy.json`; the external agent
+then installs from a verified source or records fallback and continues. The resolver itself never
+downloads a font, and every attempt remains auditable.
 
 ### QA failures stay visible
 
 The repository keeps strict QA results even when they are inconvenient. Structural editability, package validity, and visual similarity are separate claims, and the toolkit reports them separately.
 
 ## What changed in v0.2.x
+
+### v0.2.2 — deterministic PowerPoint text fit and font preauthorization
+
+PowerPoint now replays browser-measured fitted font sizes through a fingerprinted cache instead of
+depending on unresolved `shrinkText` metadata. Projects may also preauthorize trusted-source font
+installation without repeated prompts while preserving source/hash provenance and fallback.
 
 ### v0.2.1 — deterministic per-slide font provenance
 
@@ -85,7 +94,7 @@ Each reconstruction worker now produces a validated per-slide `font_usage.json`.
 - Original-font discovery across slide code and usage manifests.
 - Windows system and per-user font resolution.
 - Auditable `Original → Resolved` mappings in output manifests.
-- Explicit user approval before any font-install action.
+- Explicit user approval or a project-level trusted-source preauthorization before any font-install action.
 - On-demand icon manifests instead of regenerating the entire icon library.
 - Cache fingerprints for slide assets and QA captures.
 - Hash-preserving `--qa-only` validation for unchanged outputs.

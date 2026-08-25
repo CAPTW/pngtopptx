@@ -1,0 +1,28 @@
+{
+  "schemaVersion": "slide-image-dual-render.font-install-policy.v1",
+  "authorization": "always",
+  "userPromptRequired": false,
+  "searchOrder": [
+    "system-fonts",
+    "user-fonts",
+    "user-provided-local-font-files",
+    "official-vendor-download",
+    "licensed-embedded-font"
+  ],
+  "installation": {
+    "allowed": true,
+    "preferredScope": "current-user",
+    "trustedSourcesOnly": true,
+    "recordSourceUrl": true,
+    "recordPackageSha256": true
+  },
+  "unavailableAction": "fallback-and-continue",
+  "requiredEvidence": [
+    "original-font",
+    "resolved-font",
+    "exact-or-fallback",
+    "installation-attempt",
+    "source-and-sha256-when-installed"
+  ],
+  "conversionMustContinue": true
+}

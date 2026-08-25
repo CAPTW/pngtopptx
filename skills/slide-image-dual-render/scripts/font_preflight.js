@@ -159,12 +159,16 @@ function main(){
     return Object.assign({}, mapping, { sources:row.sources });
   });
   const pending = mappings.filter(mapping => mapping.approvalRequired);
+  const installAuthorized = decision === 'approved';
+  const pendingStatus = installAuthorized ? 'INSTALL_AUTHORIZED' : 'USER_DECISION_REQUIRED';
   const manifest = {
     schemaVersion:'slide-image-dual-render.font-resolution-manifest.v1',
     generatedAt:new Date().toISOString(),
     projectRoot,
-    status:pending.length ? 'USER_DECISION_REQUIRED' : 'PASS',
-    installPolicy:'ask-user-before-install; automatic-installation-forbidden',
+    status:pending.length ? pendingStatus : 'PASS',
+    installPolicy:installAuthorized
+      ? 'user-preauthorized-installation; trusted-source-only; fallback-if-unavailable'
+      : 'ask-user-before-install; automatic-installation-forbidden',
     automaticInstallationAttempted:false,
     installDecision:decision,
     conversionContinuesAfterDecision:true,
@@ -180,14 +184,16 @@ function main(){
   const installRequest = {
     schemaVersion:'slide-image-dual-render.font-install-request.v1',
     generatedAt:new Date().toISOString(),
-    status:pending.length ? 'USER_DECISION_REQUIRED' : 'NOT_REQUIRED',
+    status:pending.length ? pendingStatus : 'NOT_REQUIRED',
     automaticInstallationAttempted:false,
-    userQuestion:pending.length
+    userQuestion:pending.length && !installAuthorized
       ? `The following original fonts are not installed: ${pending.map(row => row.original).join(', ')}. May they be installed?`
       : null,
     requestedFonts:pending.map(row => ({ original:row.original, evidence:row.evidence, sources:row.sources })),
     allowedResponses:{
-      install:'Install only after explicit user approval, outside this resolver, then rerun.',
+      install:installAuthorized
+        ? 'Installation is already authorized. Use a trusted source, record provenance and SHA-256, then rerun.'
+        : 'Install only after explicit user approval, outside this resolver, then rerun.',
       declined:'Rerun with DECK_FONT_INSTALL_DECISION=declined; fallback is applied and conversion continues.',
       unavailable:'Rerun with DECK_FONT_INSTALL_DECISION=unavailable; fallback is applied and conversion continues.',
     },
@@ -195,8 +201,10 @@ function main(){
   writeJson(requestPath, installRequest);
 
   if(pending.length){
-    console.error(`[font-preflight] USER_DECISION_REQUIRED: ${pending.map(row => row.original).join(', ')}`);
-    console.error('[font-preflight] Automatic font installation was not attempted. Ask the user before any installation.');
+    console.error(`[font-preflight] ${pendingStatus}: ${pending.map(row => row.original).join(', ')}`);
+    console.error(installAuthorized
+      ? '[font-preflight] Installation is preauthorized. Install only from a trusted source, record provenance, then rerun; use unavailable to continue with fallback if installation cannot be completed.'
+      : '[font-preflight] Automatic font installation was not attempted. Ask the user before any installation.');
     console.error(`[font-preflight] Request: ${requestPath}`);
     console.error(`[font-preflight] Mapping: ${manifestPath}`);
     process.exitCode = 3;

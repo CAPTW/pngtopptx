@@ -81,6 +81,16 @@ try {
     assert.strictEqual(manifest.automaticInstallationAttempted, false);
 
     result = cp.spawnSync(process.execPath, [preflightPath, '--project', tempRoot], {
+      env:Object.assign({}, baseEnv, { DECK_FONT_INSTALL_DECISION:'approved' }), encoding:'utf8',
+    });
+    assert.strictEqual(result.status, 3, `Preauthorized missing font must pause for trusted-source installation: ${result.stderr}`);
+    manifest = JSON.parse(fs.readFileSync(path.join(tempRoot, 'out', 'font_resolution_manifest.json'), 'utf8'));
+    assert.strictEqual(manifest.status, 'INSTALL_AUTHORIZED');
+    const request = JSON.parse(fs.readFileSync(path.join(tempRoot, 'out', 'font_install_request.json'), 'utf8'));
+    assert.strictEqual(request.status, 'INSTALL_AUTHORIZED');
+    assert.strictEqual(request.userQuestion, null, 'Preauthorized installation must not ask the user again');
+
+    result = cp.spawnSync(process.execPath, [preflightPath, '--project', tempRoot], {
       env:Object.assign({}, baseEnv, { DECK_FONT_INSTALL_DECISION:'declined' }), encoding:'utf8',
     });
     assert.strictEqual(result.status, 0, `Declined install must continue with fallback: ${result.stderr}`);

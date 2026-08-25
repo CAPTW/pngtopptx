@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.2
+
+- Added deterministic browser-measured shrink-to-fit replay so editable PowerPoint text uses the same fitted sizes as the HTML parity surface, with a fingerprinted warm cache.
+- Added project-level trusted-source font-install preauthorization through `config/font_install_policy.json`; the resolver still records provenance and pauses until the external installation attempt completes or fallback is selected.
+- Added rich-text font-size inheritance and regression coverage for exact fonts, preauthorized installation, fallback continuation, and the text-fit manifest bridge.
+
 ## 0.2.1
 
 - Added validated per-slide `font_usage.json` authoring artifacts and deterministic deck-level font manifest merging before font preflight.

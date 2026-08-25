@@ -1,8 +1,11 @@
 // build.js — render all slides to BOTH pptx and html from the same slide code.
 const fs = require('fs');
+const crypto = require('crypto');
+const os = require('os');
 const path = require('path');
 const vm = require('vm');
 const { spawnSync } = require('child_process');
+const { pathToFileURL } = require('url');
 
 const BUILD_STARTED_MS = Date.now();
 const SCRIPT_ROOT = __dirname;
@@ -87,7 +90,11 @@ async function buildPptx(outFile, opts = {}){
     OM.setCurrentSlide(slideNo);
     OM.setEnabled(!!opts.record);
     const slide = pptx.addSlide();
-    const surf = makePptxSurface(pptx, slide);
+    const surf = makePptxSurface(pptx, slide, {
+      slideNo,
+      textFit:opts.textFit,
+      textFitSafetyFactor:opts.textFitSafetyFactor,
+    });
     SL[k](surf);
     OM.setEnabled(false);
   });
@@ -100,7 +107,7 @@ function buildHtml(outFile, opts = {}){
     const slideNo = k.slice(1);
     OM.setCurrentSlide(Number(slideNo));
     OM.setEnabled(!!opts.record);
-    const surf = makeHtmlSurface();
+    const surf = makeHtmlSurface({ slideNo:Number(slideNo), textOnly:!!opts.textOnly });
     SL[k](surf);
     OM.setEnabled(false);
     return `<section class="slide" id="slide-${slideNo}" data-slide="${slideNo}" style="background:#${surf._bg()};">\n${surf._html()}\n</section>`;
@@ -164,6 +171,10 @@ ${slidesHtml}
       var guard = 0;
       while(guard++ < 140 && inner.scrollWidth > el.clientWidth + 0.5 && fs > 6){ fs -= 0.5; el.style.fontSize = fs + 'px'; }
     });
+    document.querySelectorAll('[data-text-fit-id]').forEach(function(el){
+      var px = parseFloat(getComputedStyle(el).fontSize);
+      if(Number.isFinite(px)) el.dataset.effectiveFontSizePt = (px / ${PXW / SW / 72}).toFixed(4);
+    });
   }
   function fit(){
     var qa = qaStaticEnabled();
@@ -199,10 +210,158 @@ ${slidesHtml}
 </body>
 </html>`;
   fs.writeFileSync(outFile, doc);
-  console.log('wrote', outFile, `(${(doc.length/1024/1024).toFixed(1)} MB)`);
+  if(!opts.quiet) console.log('wrote', outFile, `(${(doc.length/1024/1024).toFixed(1)} MB)`);
 }
 
-function writeBuildTrace(target, pptxOut, htmlOut) {
+function findChromeLike(){
+  const candidates = [
+    process.env.CHROME_PATH,
+    process.env.EDGE_PATH,
+    process.env.PROGRAMFILES && path.join(process.env.PROGRAMFILES, 'Google', 'Chrome', 'Application', 'chrome.exe'),
+    process.env['PROGRAMFILES(X86)'] && path.join(process.env['PROGRAMFILES(X86)'], 'Google', 'Chrome', 'Application', 'chrome.exe'),
+    process.env.PROGRAMFILES && path.join(process.env.PROGRAMFILES, 'Microsoft', 'Edge', 'Application', 'msedge.exe'),
+    process.env['PROGRAMFILES(X86)'] && path.join(process.env['PROGRAMFILES(X86)'], 'Microsoft', 'Edge', 'Application', 'msedge.exe'),
+    process.env.LOCALAPPDATA && path.join(process.env.LOCALAPPDATA, 'Google', 'Chrome', 'Application', 'chrome.exe'),
+    process.env.LOCALAPPDATA && path.join(process.env.LOCALAPPDATA, 'Microsoft', 'Edge', 'Application', 'msedge.exe'),
+  ].filter(Boolean);
+  return candidates.find(candidate => fs.existsSync(candidate)) || null;
+}
+
+function parseTextFitDom(dom){
+  const entries = {};
+  const tags = String(dom||'').match(/<div\b[^>]*data-text-fit-id="[^"]+"[^>]*>/gi) || [];
+  for(const tag of tags){
+    const id = /data-text-fit-id="([^"]+)"/i.exec(tag);
+    const requested = /data-requested-font-size-pt="([^"]+)"/i.exec(tag);
+    const effective = /data-effective-font-size-pt="([^"]+)"/i.exec(tag);
+    if(!id || !effective) continue;
+    const requestedFontSizePt = Number(requested ? requested[1] : NaN);
+    const fontSizePt = Number(effective[1]);
+    if(!Number.isFinite(fontSizePt) || fontSizePt <= 0) continue;
+    const shrinkThreshold = Number.isFinite(requestedFontSizePt)
+      ? Math.max(0.05, requestedFontSizePt * 0.005)
+      : 0.05;
+    entries[id[1]] = {
+      requestedFontSizePt:Number.isFinite(requestedFontSizePt) ? requestedFontSizePt : null,
+      fontSizePt,
+      shrinkApplied:Number.isFinite(requestedFontSizePt) ? fontSizePt < requestedFontSizePt - shrinkThreshold : false,
+    };
+  }
+  return entries;
+}
+
+function hashFileIfPresent(file){
+  try { return fs.existsSync(file) ? crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex') : ''; }
+  catch (_) { return ''; }
+}
+
+function stableFontResolutionFingerprint(file){
+  try {
+    if(!file || !fs.existsSync(file)) return '';
+    const data = JSON.parse(fs.readFileSync(file, 'utf8'));
+    const mappings = Array.isArray(data.mappings) ? data.mappings.map(row => ({
+      original:String(row.original||''),
+      resolved:String(row.resolved||''),
+      exact:row.exact !== false,
+      fallbackApplied:!!row.fallbackApplied,
+    })).sort((a,b) => a.original.localeCompare(b.original) || a.resolved.localeCompare(b.resolved)) : [];
+    return crypto.createHash('sha256').update(JSON.stringify(mappings)).digest('hex');
+  } catch (_) { return ''; }
+}
+
+function textFitFingerprint(){
+  const profilePath = process.env.DECK_PROFILE ? path.resolve(process.env.DECK_PROFILE) : '';
+  const fontManifestPath = process.env.DECK_FONT_RESOLUTION_MANIFEST ? path.resolve(process.env.DECK_FONT_RESOLUTION_MANIFEST) : '';
+  const fontUsagePath = process.env.DECK_FONT_USAGE ? path.resolve(process.env.DECK_FONT_USAGE) : '';
+  const payload = {
+    contract:'slide-image-dual-render.text-fit.v1',
+    slidesJs:hashFileIfPresent(SLIDES_PATH),
+    atomsHtml:hashFileIfPresent(path.join(SCRIPT_ROOT, 'lib', 'atoms_html.js')),
+    selectedSlides:order,
+    sourcePixelCanvas:{ width:PXW, height:PXH },
+    profile:hashFileIfPresent(profilePath),
+    fontResolution:stableFontResolutionFingerprint(fontManifestPath),
+    fontUsage:hashFileIfPresent(fontUsagePath),
+  };
+  return crypto.createHash('sha256').update(JSON.stringify(payload)).digest('hex');
+}
+
+function buildTextFitManifest(){
+  const started = Date.now();
+  const manifestPath = path.join(PROJECT_ROOT, 'out', 'text_fit_manifest.json');
+  const configuredSafety = Number(process.env.DECK_PPTX_TEXT_FIT_SAFETY || 0.98);
+  const pptxSafetyFactor = Number.isFinite(configuredSafety)
+    ? Math.min(Math.max(configuredSafety, 0.8), 1)
+    : 0.98;
+  const sourceFingerprint = textFitFingerprint();
+  try {
+    const cached = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+    if(cached && cached.status === 'ok' && cached.sourceFingerprint === sourceFingerprint && cached.entries && Object.keys(cached.entries).length){
+      const manifest = Object.assign({}, cached, {
+        cacheHit:true,
+        elapsedMs:Date.now()-started,
+        cacheLookupElapsedMs:Date.now()-started,
+        pptxSafetyFactor,
+      });
+      fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), 'utf8');
+      console.log('reused', manifestPath, `(${manifest.textCount} text boxes; fingerprint cache hit)`);
+      return { manifestPath, manifest };
+    }
+  } catch (_) {}
+  const chrome = findChromeLike();
+  if(!chrome) throw new Error('Deterministic PPTX shrink-to-fit requires local Chrome or Edge, but neither executable was found.');
+  const safeRunId = String(process.env.SLIDE_PIPELINE_RUN_ID || process.pid).replace(/[^a-zA-Z0-9_-]/g, '_');
+  const probePath = path.join(PROJECT_ROOT, 'out', `.text-fit-probe-${safeRunId}.html`);
+  const profileDir = fs.mkdtempSync(path.join(os.tmpdir(), 'slide-text-fit-'));
+  try {
+    buildHtml(probePath, { record:false, textOnly:true, quiet:true });
+    const baseArgs = [
+      '--headless=new', '--disable-gpu', '--hide-scrollbars', '--allow-file-access-from-files',
+      '--disable-background-networking', '--disable-extensions', '--no-first-run', '--no-default-browser-check',
+      `--user-data-dir=${profileDir}`, `--window-size=${PXW},${PXH}`, '--virtual-time-budget=1800',
+      '--dump-dom', `${pathToFileURL(probePath).href}?qa=1`,
+    ];
+    let result = spawnSync(chrome, baseArgs, { encoding:'utf8', windowsHide:true, maxBuffer:64*1024*1024, timeout:30000 });
+    if(result.status !== 0){
+      const fallbackArgs = baseArgs.slice();
+      fallbackArgs[0] = '--headless';
+      result = spawnSync(chrome, fallbackArgs, { encoding:'utf8', windowsHide:true, maxBuffer:64*1024*1024, timeout:30000 });
+    }
+    if(result.error || result.status !== 0){
+      const detail = result.error ? result.error.message : String(result.stderr||result.stdout||'').trim();
+      throw new Error(`Text-fit browser measurement failed: ${detail || `exit ${result.status}`}`);
+    }
+    const entries = parseTextFitDom(result.stdout);
+    if(!Object.keys(entries).length) throw new Error('Text-fit browser measurement produced no resolved text entries.');
+    const measurementElapsedMs = Date.now()-started;
+    const manifest = {
+      schemaVersion:'slide-image-dual-render.text-fit.v1',
+      generatedAt:new Date().toISOString(),
+      status:'ok',
+      method:'chrome-dom-font-measurement',
+      browser:chrome,
+      sourceFingerprint,
+      cacheHit:false,
+      sourcePixelCanvas:{ width:PXW, height:PXH },
+      slideNumbers:order.map(k => Number(k.slice(1))),
+      textCount:Object.keys(entries).length,
+      shrinkCount:Object.values(entries).filter(entry => entry.shrinkApplied).length,
+      pptxSafetyFactor,
+      elapsedMs:measurementElapsedMs,
+      measurementElapsedMs,
+      cacheLookupElapsedMs:0,
+      entries,
+    };
+    fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), 'utf8');
+    console.log('wrote', manifestPath, `(${manifest.textCount} text boxes; ${manifest.shrinkCount} pre-shrunk)`);
+    return { manifestPath, manifest };
+  } finally {
+    try { if(fs.existsSync(probePath)) fs.unlinkSync(probePath); } catch (_) {}
+    try { fs.rmSync(profileDir, { recursive:true, force:true }); } catch (_) {}
+  }
+}
+
+function writeBuildTrace(target, pptxOut, htmlOut, textFitEvidence) {
   const outputs = {};
   if (target === 'pptx' || target === 'both') outputs.pptx = path.resolve(pptxOut);
   if (target === 'html' || target === 'both') outputs.html = path.resolve(htmlOut);
@@ -229,6 +388,16 @@ function writeBuildTrace(target, pptxOut, htmlOut) {
       transformScaleInQaMode: 1,
       webFontImportsEnabled: FONT_POLICY.webFontImportsEnabled,
     },
+    textFit: textFitEvidence ? {
+      manifestPath:textFitEvidence.manifestPath,
+      status:textFitEvidence.manifest.status,
+      method:textFitEvidence.manifest.method,
+      textCount:textFitEvidence.manifest.textCount,
+      shrinkCount:textFitEvidence.manifest.shrinkCount,
+      pptxSafetyFactor:textFitEvidence.manifest.pptxSafetyFactor,
+      elapsedMs:textFitEvidence.manifest.elapsedMs,
+      cacheHit:!!textFitEvidence.manifest.cacheHit,
+    } : null,
     projectRoot: PROJECT_ROOT,
     skillRoot: SKILL_ROOT,
     buildJs: path.resolve(__filename),
@@ -256,13 +425,17 @@ function writeBuildTrace(target, pptxOut, htmlOut) {
   const pptxOut = process.env.PPTX_OUT || path.join(PROJECT_ROOT,'out','deck.pptx');
   const htmlOut = process.env.HTML_OUT || path.join(PROJECT_ROOT,'out','deck.html');
   OM.reset();
-  if(target==='pptx' || target==='both') await buildPptx(pptxOut, { record: true });
+  const textFitEvidence = (target==='pptx' || target==='both') ? buildTextFitManifest() : null;
+  if(target==='pptx' || target==='both') await buildPptx(pptxOut, {
+    record:true,
+    textFit:textFitEvidence.manifest.entries,
+    textFitSafetyFactor:textFitEvidence.manifest.pptxSafetyFactor,
+  });
   if(target==='html' || target==='both') buildHtml(htmlOut, { record: target === 'html' });
   const nativeManifestPath = path.join(PROJECT_ROOT, 'out', 'native_object_manifest.json');
   OM.writeNativeManifest(nativeManifestPath);
   console.log('wrote', nativeManifestPath);
   persistFontResolutionManifest(FONT_MANIFEST_PATH);
   console.log('wrote', FONT_MANIFEST_PATH);
-  writeBuildTrace(target, pptxOut, htmlOut);
+  writeBuildTrace(target, pptxOut, htmlOut, textFitEvidence);
 })();
-

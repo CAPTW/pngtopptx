@@ -39,8 +39,8 @@ Options:
   --profile <path>     DECK_PROFILE path. Relative paths resolve from project root.
   --font-usage <path>  Original-font inventory JSON. Default: work/font_usage.json when present.
   --font-install-decision <decision>
-                       ask, approved, declined, unavailable, or installed. Default: ask.
-                       The workflow never installs a font automatically.
+                       ask, approved, declined, unavailable, or installed. Default: project policy, then ask.
+                       An always-authorized project policy suppresses repeat approval prompts; trusted-source installation remains external to the resolver.
   --assets <path>      DECK_ASSETS path. Relative paths resolve from project root.
   --icon-usage <path>  Explicit on-demand icon manifest. Relative paths resolve from project root.
   --crop-plan <path>   Crop plan JSON. Relative paths resolve from project root. Default: work/crop_plan.json.
@@ -337,6 +337,29 @@ function runPython(label, script, argv, layout, env) {
   runStep(label, python, [script].concat(argv || []), layout, env);
 }
 
+function findFontInstallPolicy(projectRoot){
+  let current = path.resolve(projectRoot);
+  while(true){
+    const candidate = path.join(current, 'config', 'font_install_policy.json');
+    if(fileExists(candidate)) return candidate;
+    const parent = path.dirname(current);
+    if(parent === current) return null;
+    current = parent;
+  }
+}
+
+function defaultFontInstallDecision(projectRoot){
+  const policyPath = findFontInstallPolicy(projectRoot);
+  if(!policyPath) return 'ask';
+  try {
+    const policy = JSON.parse(fs.readFileSync(policyPath, 'utf8'));
+    if(String(policy.authorization||'').toLowerCase() === 'always' && policy.installation && policy.installation.allowed === true){
+      return 'approved';
+    }
+  } catch (_) {}
+  return 'ask';
+}
+
 function baseEnv(args, layout, runId, deps) {
   const env = {
     DECK_PROJECT_ROOT: layout.projectRoot,
@@ -355,7 +378,7 @@ function baseEnv(args, layout, runId, deps) {
     SLIDE_PIPELINE_INVOKED: '1',
     SLIDE_PIPELINE_STRICT: '1',
     SLIDE_PIPELINE_ENFORCE: '1',
-    DECK_FONT_INSTALL_DECISION: args.fontInstallDecision || process.env.DECK_FONT_INSTALL_DECISION || 'ask',
+    DECK_FONT_INSTALL_DECISION: args.fontInstallDecision || process.env.DECK_FONT_INSTALL_DECISION || defaultFontInstallDecision(layout.projectRoot),
     DECK_FONT_USAGE: layout.fontUsagePath,
     DECK_FONT_RESOLUTION_MANIFEST: layout.fontResolutionManifestPath,
     DECK_FONT_INSTALL_REQUEST: layout.fontInstallRequestPath,
@@ -486,7 +509,7 @@ function traceSkeleton(args, layout, runId, startTimeMs, deps) {
     DECK_PROFILE: layout.profilePath || process.env.DECK_PROFILE || '',
     DECK_ICON_USAGE: layout.iconUsagePath || '',
     DECK_FONT_USAGE: layout.fontUsagePath,
-    DECK_FONT_INSTALL_DECISION: args.fontInstallDecision || process.env.DECK_FONT_INSTALL_DECISION || 'ask',
+    DECK_FONT_INSTALL_DECISION: args.fontInstallDecision || process.env.DECK_FONT_INSTALL_DECISION || defaultFontInstallDecision(layout.projectRoot),
     DECK_ASSETS: layout.assetsDir,
     DECK_PXW: args.pxw || process.env.DECK_PXW || '',
     DECK_PXH: args.pxh || process.env.DECK_PXH || '',

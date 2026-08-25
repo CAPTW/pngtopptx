@@ -33,6 +33,15 @@ try {
   assert.strictEqual(calls.length, 1);
   assert.notStrictEqual(calls[0].options.fontFace, missing, 'Missing original font must be replaced only after declined decision');
   assert.strictEqual(calls[0].content[0].options.fontFace, calls[0].options.fontFace, 'Run and text box must use the same resolved fallback');
+  assert.strictEqual(calls[0].content[0].options.fontSize, 20, 'Rich-text run must inherit the text-box font size');
+
+  surface.txt([{ text:'Explicit run size', fontFace:missing, fontSize:17 }], 10, 70, 300, 50, { fontFace:missing, sz:20 });
+  assert.strictEqual(calls.length, 2);
+  assert.strictEqual(calls[1].content[0].options.fontSize, 17, 'Explicit rich-text run size must override the text-box font size');
+
+  surface.txt('Line one\nLine two', 10, 130, 300, 50, { fontFace:missing, sz:11 });
+  assert.strictEqual(calls.length, 3);
+  assert(calls[2].content.every(run => run.options.fontSize === 11), 'Multiline runs must inherit the text-box font size');
   const native = OM.toJSON();
   const text = native.slides['1'].objects.find(obj => obj.type === 'text');
   assert.strictEqual(text.originalFont, missing);

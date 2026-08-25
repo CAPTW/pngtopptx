@@ -65,19 +65,24 @@ function runHTML(content, baseColor, baseFont){
   return esc(String(content)).replace(/\n/g,'<br>');
 }
 
-function makeHtmlSurface(){
+function makeHtmlSurface(opts={}){
   const parts = [];
   let bgColor = '020812';
+  let textIndex = 0;
+  const slideNo = Number(opts.slideNo) || 1;
+  const textOnly = !!opts.textOnly;
   const S = {
     _html(){ return parts.join('\n'); },
     _bg(){ return bgColor; },
     bgFill(hex){ bgColor = hex; },
     img(p, x,y,w,h){
       OM.recordImage(p, x,y,w,h);
+      if(textOnly) return;
       parts.push(`<img src="${dataURI(p)}" style="position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;object-fit:fill;">`);
     },
     rrect(x,y,w,h,o={}){
       OM.record({ type:'panel', x,y,w,h, editable:true, source:'surface.rrect' });
+      if(textOnly) return;
       const a = alpha(o.fillTrans);
       const bg = o.fill ? rgba(o.fill, a) : 'transparent';
       const sh = o.shadow ? 'box-shadow:2px 2px 6px rgba(0,0,0,.45);' : '';
@@ -85,10 +90,12 @@ function makeHtmlSurface(){
     },
     ell(x,y,w,h,o={}){
       OM.record({ type:'shape', x,y,w,h, editable:true, source:'surface.ell' });
+      if(textOnly) return;
       parts.push(`<div style="position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;background:#${o.fill||'1F6FB5'};border:${lineWidthPx(o.lineW)}px solid #${o.line||o.fill||'1F6FB5'};border-radius:50%;box-sizing:border-box;"></div>`);
     },
     chev(x,y,w,h,o={}){
       OM.record({ type:'shape', x,y,w,h, editable:true, source:'surface.chev' });
+      if(textOnly) return;
       const a = alpha(o.fillTrans);
       const bg = o.fill ? rgba(o.fill, a) : 'transparent';
       // border emulated via stacked clip: draw line-colored chev behind, fill chev slightly inset
@@ -99,6 +106,7 @@ function makeHtmlSurface(){
     },
     ln(x,y,w,h,o={}){
       OM.record({ type:'rule', x,y,w,h, editable:true, source:'surface.ln' });
+      if(textOnly) return;
       const g = normalizeLineGeom(x,y,w,h);
       const col = `#${o.color||'2A4A6E'}`;
       const style = o.dash==='dash' ? 'dashed' : 'solid';
@@ -110,6 +118,7 @@ function makeHtmlSurface(){
       }
     },
     txt(content, x,y,w,h, o={}){
+      const textFitId = `${slideNo}:${++textIndex}`;
       const originalFont = o.fontFace||o.fontFamily||FONT_POLICY.resolved;
       const resolvedFont = resolveRenderFont(originalFont);
       const mappings = Array.isArray(content)
@@ -125,11 +134,10 @@ function makeHtmlSurface(){
       const innerWs = o.shrink ? 'white-space:nowrap;' : '';
       const inner = `<div style="width:100%;text-align:${ta};line-height:${o.lh!=null?o.lh:1.0};${ls}${innerWs}">${runHTML(content, o.color||'F2F7FC', originalFont)}</div>`;
       const sa = o.shrink ? ' data-shrink="1"' : '';
-      parts.push(`<div${sa} data-original-font="${esc(originalFont)}" data-resolved-font="${esc(resolvedFont)}" style="position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;display:flex;align-items:${ai};justify-content:${jc};overflow:hidden;font-family:${cssStack(originalFont)};font-size:${fpx.toFixed(1)}px;color:#${o.color||'F2F7FC'};${o.bold?'font-weight:700;':''}${o.italic?'font-style:italic;':''}${ws}box-sizing:border-box;">${inner}</div>`);
+      parts.push(`<div${sa} data-text-fit-id="${textFitId}" data-requested-font-size-pt="${Number(o.sz||12)}" data-original-font="${esc(originalFont)}" data-resolved-font="${esc(resolvedFont)}" style="position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;display:flex;align-items:${ai};justify-content:${jc};overflow:hidden;font-family:${cssStack(originalFont)};font-size:${fpx.toFixed(1)}px;color:#${o.color||'F2F7FC'};${o.bold?'font-weight:700;':''}${o.italic?'font-style:italic;':''}${ws}box-sizing:border-box;">${inner}</div>`);
     },
   };
   return S;
 }
 
-module.exports = { makeHtmlSurface, PXW, PXH, normalizeLineGeom, lineWidthPx, FONT_STACK };
-
+module.exports = { makeHtmlSurface, PXW, PXH, PT2PX, normalizeLineGeom, lineWidthPx, FONT_STACK };

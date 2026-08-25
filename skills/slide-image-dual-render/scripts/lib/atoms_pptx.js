@@ -24,23 +24,45 @@ function safeLineGeom(x,y,w,h){
   return { x:nx, y:ny, w:nw, h:nh };
 }
 
+function normalizedRunSize(value, fallback){
+  const n = Number(value != null ? value : fallback);
+  return Number.isFinite(n) && n > 0 ? n : 12;
+}
+
 // content -> pptxgenjs text array
-function toRuns(content, baseColor, baseFont){
+// PptxGenJS does not reliably inherit text-box typography into rich-text runs,
+// so every generated run must carry the effective font face and size.
+function toRuns(content, baseColor, baseFont, baseSize, sizeScale=1){
   if(Array.isArray(content)){
     return content.map(r=>({ text:r.text, options:{
       color:r.color||baseColor, bold:!!r.bold, italic:!!r.italic, breakLine:!!r.breakLine,
       fontFace:resolveRenderFont(r.fontFace||r.fontFamily||baseFont),
+      fontSize:(r.fontSize != null || r.sz != null)
+        ? normalizedRunSize(r.fontSize != null ? r.fontSize : r.sz, baseSize) * sizeScale
+        : normalizedRunSize(null, baseSize),
     }}));
   }
   const str = String(content);
   if(str.indexOf('\n')>=0){
     const parts = str.split('\n');
-    return parts.map((p,i)=>({ text:p, options:{ breakLine:i<parts.length-1 } }));
+    return parts.map((p,i)=>({ text:p, options:{
+      color:baseColor,
+      fontFace:resolveRenderFont(baseFont),
+      fontSize:normalizedRunSize(null, baseSize),
+      breakLine:i<parts.length-1,
+    } }));
   }
   return str;
 }
 
-function makePptxSurface(pptx, slide){
+function makePptxSurface(pptx, slide, opts={}){
+  let textIndex = 0;
+  const slideNo = Number(opts.slideNo) || 1;
+  const textFit = opts.textFit && typeof opts.textFit === 'object' ? opts.textFit : {};
+  const configuredSafety = Number(opts.textFitSafetyFactor);
+  const textFitSafetyFactor = Number.isFinite(configuredSafety)
+    ? Math.min(Math.max(configuredSafety, 0.8), 1)
+    : 1;
   return {
     _pptx: pptx,
     bgFill(hex){ slide.background = { color: hex }; },
@@ -79,15 +101,27 @@ function makePptxSurface(pptx, slide){
       });
     },
     txt(content, x,y,w,h, o={}){
+      const textFitId = `${slideNo}:${++textIndex}`;
+      const requestedSize = normalizedRunSize(null, o.sz||12);
+      const fitEntry = textFit[textFitId];
+      let measuredSize = normalizedRunSize(
+        fitEntry && typeof fitEntry === 'object' ? fitEntry.fontSizePt : fitEntry,
+        requestedSize
+      );
+      if(o.shrink && fitEntry && typeof fitEntry === 'object' && fitEntry.shrinkApplied){
+        measuredSize *= textFitSafetyFactor;
+      }
+      const resolvedSize = +(o.shrink ? Math.min(requestedSize, measuredSize) : requestedSize).toFixed(3);
+      const sizeScale = requestedSize > 0 ? resolvedSize / requestedSize : 1;
       const originalFont = o.fontFace||o.fontFamily||FONT;
       const resolvedFont = resolveRenderFont(originalFont);
       const mappings = Array.isArray(content)
         ? content.map(r => fontMappingFor(r.fontFace||r.fontFamily||originalFont))
         : [fontMappingFor(originalFont)];
       OM.recordText(content, x,y,w,h,'surface.txt', { originalFont, resolvedFont, fontMappings:mappings });
-      slide.addText(toRuns(content, o.color||'F2F7FC', originalFont), {
+      slide.addText(toRuns(content, o.color||'F2F7FC', originalFont, resolvedSize, sizeScale), {
         x:ix(x), y:iy(y), w:ix(w), h:iy(h),
-        fontFace:resolvedFont, fontSize:o.sz||12, color:o.color||'F2F7FC',
+        fontFace:resolvedFont, fontSize:resolvedSize, color:o.color||'F2F7FC',
         bold:!!o.bold, italic:!!o.italic, align:o.align||'left', valign:o.valign||'middle',
         lineSpacingMultiple:o.lh!=null?o.lh:1.0, charSpacing:o.cs,
         margin:o.margin!=null?o.margin:0, wrap:o.wrap!=null?o.wrap:true, shrinkText:!!o.shrink,
@@ -97,5 +131,3 @@ function makePptxSurface(pptx, slide){
 }
 
 module.exports = { makePptxSurface, ix, iy, safeLineGeom, linePt };
-
-

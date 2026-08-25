@@ -98,17 +98,22 @@ system-wide and per-user font locations and the Windows HKLM/HKCU font registrie
 original font must resolve to itself; a per-user installation such as Pretendard must never be replaced
 with Arial merely because it is absent from `C:\Windows\Fonts`.
 
-If an original font is genuinely missing, **never install it automatically**. `font_preflight.js` writes
-`out/font_install_request.json` and `out/font_resolution_manifest.json`, returns
-`USER_DECISION_REQUIRED`, and the agent must ask the user before any installation attempt. Then:
+If an original font is genuinely missing, `font_preflight.js` writes
+`out/font_install_request.json` and `out/font_resolution_manifest.json` and stops before render.
+The resolver never downloads or installs fonts itself. The decision is either the default
+`USER_DECISION_REQUIRED` path or a project preauthorization read from
+`config/font_install_policy.json` (`authorization: "always"` and
+`installation.allowed: true`). Then:
 
-- user approves installation: install only as a separately authorized action, rescan, and rerun;
+- user approves installation, or the project policy preauthorizes it: install outside the resolver
+  only from an official vendor, licensed embedded font, or user-provided trusted local file; record
+  the source and SHA-256, rescan, and rerun;
 - user declines: rerun with `--font-install-decision declined`, apply a documented fallback, and continue;
 - installation is unavailable: rerun with `--font-install-decision unavailable`, apply a documented
   fallback, and continue.
 
-Missing fonts are therefore a user-decision pause, not a permanent conversion failure. After the user
-decision, conversion continues. Every text object and run keeps an `Original -> Resolved` mapping in
+Missing fonts are therefore an authorization/install pause, not a permanent conversion failure. After
+installation or fallback selection, conversion continues. Every text object and run keeps an `Original -> Resolved` mapping in
 `out/font_resolution_manifest.json` and `out/native_object_manifest.json`. The renderer uses the same
 resolved font for PPTX and HTML and never imports a remote webfont for parity QA.
 
@@ -347,9 +352,9 @@ icons, chevrons, matrix symbols, decision boxes, callouts).
   must be exactly `DECK_PXW × DECK_PXH`. Do not loosen visual thresholds for capture-scale or font bugs.
 - **One resolved font for both outputs.** Do not rely on a CDN webfont in HTML unless the same font is
   installed and available to PPTX rasterization.
-- **Never auto-install fonts.** Search system and user fonts first. If an original font is missing,
-  ask the user; after decline or installation-unavailable, fall back, record `Original -> Resolved`,
-  and continue conversion.
+- **Never install fonts without authority or provenance.** Search system and user fonts first. If an
+  original font is missing, use explicit approval or the project trusted-source preauthorization;
+  after installation-unavailable, fall back, record `Original -> Resolved`, and continue conversion.
 - **Classification, not authoring.** Pick which frozen profile an input is, then override specifics —
   don't re-derive a whole design system per slide. That re-derivation is the variance you're removing.
 - **Confidence threshold is mandatory.** The library is a closed set; inputs are open. No confident
