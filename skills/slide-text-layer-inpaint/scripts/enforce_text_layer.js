@@ -39,6 +39,7 @@ function usage() {
   return `Usage:
   node scripts/enforce_text_layer.js --slide work/slide01
   node scripts/enforce_text_layer.js --slide work/slide01 --image src/slide01.png --strict
+  node scripts/enforce_text_layer.js --slide work/slide01 --strict --require-clean-background
   node scripts/enforce_text_layer.js --work work --slides 1,2,3
 
 Validates the slide-text-layer-inpaint artifact contract:
@@ -50,6 +51,9 @@ Validates the slide-text-layer-inpaint artifact contract:
   clean_background.png
   inpainting_report.json
   inpainting_report.md
+
+A contract PASS, including strict mode, does not verify semantic text removal.
+Clean-background qualification is reported separately as unverified.
 
 Rules enforced:
   - OCR evidence is not treated as truth.
@@ -69,6 +73,10 @@ Options:
   --strict            Require current metadata; legacy artifacts without metadata fail.
   --require-residual-check
                       Require residual_text_report.json even outside strict mode.
+  --require-clean-background
+                      Require semantic clean-background qualification and a residual report.
+                      No semantic verifier is implemented: this mode fails closed.
+                      Author-supplied report fields cannot grant qualification.
   --max-residual-risk <low|medium|high>
                       Maximum accepted residual text risk. Default: medium.
   --work <dir>        Work root used with --slides.
@@ -85,6 +93,7 @@ function parseArgs(argv) {
     help: false,
     strict: false,
     requireResidualCheck: false,
+    requireCleanBackground: false,
     maxResidualRisk: "medium",
   };
   for (let i = 0; i < argv.length; i += 1) {
@@ -97,6 +106,8 @@ function parseArgs(argv) {
       args.strict = true;
     } else if (arg === "--require-residual-check") {
       args.requireResidualCheck = true;
+    } else if (arg === "--require-clean-background") {
+      args.requireCleanBackground = true;
     } else if (arg === "--max-residual-risk") {
       const value = argv[++i];
       if (!value || !Object.prototype.hasOwnProperty.call(RISK_RANK, value)) {
@@ -472,6 +483,22 @@ function validateTextRegionMetadata(regionsDoc, result, options) {
   }
 }
 
+function finishValidation(result, options) {
+  result.artifactContractOk = result.errors.length === 0;
+  // This validator has no semantic-verification mechanism. Never trust report
+  // claims such as verified=true to turn an artifact contract into qualification.
+  result.cleanBackgroundQualification = {
+    required: options.requireCleanBackground === true,
+    status: "unverified",
+    reason: "Semantic text removal is not verified by this artifact-contract validator; masked-edge-energy reports are heuristic only.",
+  };
+  if (options.requireCleanBackground) {
+    result.errors.push("clean-background qualification required but unverified: no semantic verifier is implemented; report claims cannot grant qualification");
+  }
+  result.ok = result.errors.length === 0;
+  return result;
+}
+
 function validateSlide(slideDir, options = {}) {
   const result = {
     slideDir,
@@ -484,8 +511,7 @@ function validateSlide(slideDir, options = {}) {
 
   if (!fs.existsSync(slideDir) || !fs.statSync(slideDir).isDirectory()) {
     result.errors.push(`slide directory not found: ${slideDir}`);
-    result.ok = false;
-    return result;
+    return finishValidation(result, options);
   }
 
   for (const name of REQUIRED_FILES) {
@@ -503,7 +529,7 @@ function validateSlide(slideDir, options = {}) {
   if (options.strict && !fs.existsSync(path.join(slideDir, "background_regions.json"))) {
     result.errors.push("missing required strict artifact: background_regions.json");
   }
-  const residualRequired = options.strict || options.requireResidualCheck;
+  const residualRequired = options.strict || options.requireResidualCheck || options.requireCleanBackground;
   if (residualRequired && !fs.existsSync(path.join(slideDir, "residual_text_report.json"))) {
     result.errors.push("missing required residual artifact: residual_text_report.json");
   }
@@ -538,8 +564,7 @@ function validateSlide(slideDir, options = {}) {
   const residualDoc = readOptionalJson(path.join(slideDir, "residual_text_report.json"), result.errors);
   validateResidualReport(residualDoc, result, options);
 
-  result.ok = result.errors.length === 0;
-  return result;
+  return finishValidation(result, options);
 }
 
 function printHuman(results) {
@@ -551,6 +576,8 @@ function printHuman(results) {
       ok = false;
       console.log(`FAIL ${result.slideDir}`);
     }
+    console.log(`  artifact contract: ${result.artifactContractOk ? "PASS" : "FAIL"}`);
+    console.log(`  clean-background qualification: ${result.cleanBackgroundQualification.status}`);
     for (const error of result.errors) console.log(`  error: ${error}`);
     for (const warning of result.warnings) console.log(`  warning: ${warning}`);
     const countText = Object.entries(result.counts)
@@ -597,6 +624,7 @@ function main() {
     strict: args.strict,
     sourceImage,
     requireResidualCheck: args.requireResidualCheck,
+    requireCleanBackground: args.requireCleanBackground,
     maxResidualRisk: args.maxResidualRisk,
   };
   const results = args.slides.map((slideDir) => validateSlide(path.resolve(slideDir), options));
