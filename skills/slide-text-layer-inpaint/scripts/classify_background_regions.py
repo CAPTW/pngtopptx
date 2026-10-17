@@ -72,6 +72,11 @@ def region_meta(region: Dict[str, Any]) -> str:
     return " ".join(parts).lower()
 
 
+def has_keyword(meta: str, token: str) -> bool:
+    # Keep regular plurals and snake_case labels, but reject embedded words.
+    return re.search(r"(?<![^\W_])" + re.escape(token) + r"s?(?![^\W_])", meta) is not None
+
+
 def sample_ring(arr: Any, bbox: Dict[str, Any], pad: int) -> Any:
     import numpy as np
 
@@ -138,25 +143,33 @@ def classify_region(arr: Any, gray: Any, region: Dict[str, Any]) -> Dict[str, An
     confidence = 0.55
     notes = f"localColorStd={std:.2f}; edgeDensity={edges:.3f}"
 
-    if any(token in meta for token in ("chart", "axis", "plot", "graph", "data point")):
+    if any(
+        has_keyword(meta, token)
+        for token in (
+            "chart", "axis", "plot", "graph", "data point", "infographic",
+            "flowchart", "scatterplot", "bargraph", "linegraph", "barplot",
+            "boxplot", "lineplot", "barchart", "linechart", "piechart", "areachart",
+        )
+    ):
         bg = "chart_area"
         confidence = 0.82
-    elif any(token in meta for token in ("icon", "glyph", "pictogram")):
+    elif any(has_keyword(meta, token) for token in ("icon", "glyph", "pictogram")):
         bg = "icon_area"
         confidence = 0.78
-    elif any(token in meta for token in ("table", "cell", "matrix", "row", "column", "grid")):
+    elif any(has_keyword(meta, token) for token in ("table", "cell", "matrix", "row", "column", "grid")):
         bg = "table_cell"
         confidence = 0.80
-    elif any(token in meta for token in ("rule", "divider", "underline", "border line")):
+    elif any(has_keyword(meta, token) for token in ("rule", "divider", "underline", "border line")):
         bg = "rule_line"
         confidence = 0.72
     elif any(
-        token in meta
+        has_keyword(meta, token)
         for token in (
             "panel",
             "card",
             "badge",
             "box",
+            "boxes",
             "callout",
             "input_doc",
             "warning",
@@ -169,10 +182,16 @@ def classify_region(arr: Any, gray: Any, region: Dict[str, Any]) -> Dict[str, An
     ):
         bg = "panel"
         confidence = 0.78
-    elif any(token in meta for token in ("photo", "texture", "photoreal", "image")):
+    elif any(
+        has_keyword(meta, token)
+        for token in (
+            "photo", "photograph", "photographic", "photography", "texture",
+            "photoreal", "photorealistic", "image",
+        )
+    ):
         bg = "photo_texture"
         confidence = 0.82
-    elif any(token in meta for token in ("gradient", "glow")):
+    elif any(has_keyword(meta, token) for token in ("gradient", "glow")):
         bg = "gradient"
         confidence = 0.72
     elif std <= 5.5 and edges <= 0.10:
