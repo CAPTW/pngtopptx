@@ -55,6 +55,31 @@ function toRuns(content, baseColor, baseFont, baseSize, sizeScale=1){
   return str;
 }
 
+// Canonical logical text of the OOXML emitted by the supported PptxGenJS text
+// path: decoded a:t content, a:br as LF, and LF between a:p paragraphs. Preserve
+// whitespace and Unicode; do not hash formatting or raw JSON. Consume toRuns'
+// result, not the author input (which is transformed for plain multiline text).
+// Embedded multiline rich runs end a paragraph after every split line; final
+// breakLine does not add an extra paragraph. XML normalizes remaining CR to LF.
+// Qualified only against PptxGenJS 4.0.1 (actual runtime evidence is retained).
+// Unknown versions keep authored identity but receive no projected text digest.
+// Emitted-package regression tests guard these library-dependent semantics.
+function serializePptxText(runs){
+  const input = Array.isArray(runs) && runs.length ? runs : [{ text:Array.isArray(runs) ? '' : runs }];
+  const pieces = [];
+  for(const run of input){
+    const text = String(run.text || '').replace(/\r*\n/g, '\n');
+    if(text.includes('\n') && !text.endsWith('\n')){
+      for(const line of text.split('\n')) pieces.push({ text:line, breakLine:true });
+    } else {
+      pieces.push({ text, breakLine:!!(run.options && run.options.breakLine) });
+    }
+  }
+  return pieces.map((piece, index) =>
+    piece.text.replace(/\r\n?/g, '\n') + (piece.breakLine && index < pieces.length - 1 ? '\n' : '')
+  ).join('');
+}
+
 function makePptxSurface(pptx, slide, opts={}){
   let textIndex = 0;
   const slideNo = Number(opts.slideNo) || 1;
@@ -118,8 +143,19 @@ function makePptxSurface(pptx, slide, opts={}){
       const mappings = Array.isArray(content)
         ? content.map(r => fontMappingFor(r.fontFace||r.fontFamily||originalFont))
         : [fontMappingFor(originalFont)];
-      OM.recordText(content, x,y,w,h,'surface.txt', { originalFont, resolvedFont, fontMappings:mappings });
-      slide.addText(toRuns(content, o.color||'F2F7FC', originalFont, resolvedSize, sizeScale), {
+      const runs = toRuns(content, o.color||'F2F7FC', originalFont, resolvedSize, sizeScale);
+      const textContent = serializePptxText(runs);
+      const textContentEmitterVersion = pptx.version || null;
+      const textContentIdentityError = textContentEmitterVersion !== '4.0.1'
+        ? 'UNVERIFIED_PPTXGENJS_VERSION'
+        : /[\u0000-\u0008\u000B\u000C\u000E-\u001F\uD800-\uDFFF\uFFFE\uFFFF]/u.test(textContent)
+          ? 'UNSUPPORTED_XML_TEXT' : null;
+      OM.recordText(content, x,y,w,h,'surface.txt', {
+        originalFont, resolvedFont, fontMappings:mappings,
+        textContent, textContentEmitterVersion, textContentIdentityError,
+        textContentSerialization:'pptxgenjs-paragraph-text-v1', representation:'native-text',
+      });
+      slide.addText(runs, {
         x:ix(x), y:iy(y), w:ix(w), h:iy(h),
         fontFace:resolvedFont, fontSize:resolvedSize, color:o.color||'F2F7FC',
         bold:!!o.bold, italic:!!o.italic, align:o.align||'left', valign:o.valign||'middle',
