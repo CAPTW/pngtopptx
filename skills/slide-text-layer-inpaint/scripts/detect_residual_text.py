@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Detect likely residual text ghosts after background repair."""
+"""Assess masked edge energy after repair; semantic text removal is unverified."""
 
 from __future__ import annotations
 
@@ -74,7 +74,9 @@ def risk_rank(risk: str) -> int:
 
 
 def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Detect residual text after background repair")
+    parser = argparse.ArgumentParser(
+        description="Assess residual masked edge energy (heuristic only; semantic text removal is unverified)"
+    )
     parser.add_argument("--before", required=True, help="Source image before text removal")
     parser.add_argument("--after", required=True, help="clean_background.png after repair")
     parser.add_argument("--regions", required=True, help="text_regions.json")
@@ -167,6 +169,11 @@ def main(argv: Optional[List[str]] = None) -> int:
     status = "fail" if worst >= 2 else "partial" if worst == 1 else "pass"
     doc = {
         "schemaVersion": "slide-text-layer-inpaint.residual_text_report.v1",
+        "assessment": {
+            "method": "masked_edge_energy",
+            "scope": "heuristic_only",
+            "semanticTextRemoval": "unverified",
+        },
         "slide": slide_number(data, before_path.stem),
         "status": status,
         "residualTextRisk": "high" if worst >= 2 else "medium" if worst == 1 else "low",
@@ -182,7 +189,7 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     print(f"wrote {out_json}")
     print(f"wrote {out_overlay}")
-    print(f"residual status: {status}")
+    print(f"residual status: {status} (masked-edge-energy heuristic only; semantic text removal unverified)")
     return 0 if status != "fail" else 1
 
 
