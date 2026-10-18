@@ -5,6 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const cp = require('child_process');
+const {dependencyProfileRequested, verifyPptxgenjsDependencyReceipts} = require('./lib/pptxgenjs_dependency');
 
 const SCRIPT_DIR = path.resolve(__dirname);
 const SCRIPT_ROOT = SCRIPT_DIR;
@@ -598,6 +599,17 @@ function refreshTraceArtifacts(trace, layout) {
   trace.objectiveEvidenceSummary = objectiveEvidenceTrace(layout);
 }
 
+function refreshDependencyTrace(trace, layout, requested) {
+  if (!requested) {
+    if (dependencyProfileRequested(layout.projectRoot)) throw new Error('PptxGenJS dependency request changed during pipeline');
+    return; // No opt-in: preserve the exact legacy trace shape.
+  }
+  const selectedOutput = trace.target === 'html' ? layout.htmlOut : (layout.pptxOut || layout.htmlOut);
+  const traceDir = selectedOutput ? path.dirname(selectedOutput) : layout.outDir;
+  trace.pptxgenjsDependency = verifyPptxgenjsDependencyReceipts(
+    layout.projectRoot, path.join(traceDir, 'build_trace.json'), layout.nativeObjectManifestPath);
+}
+
 function writeTrace(layout, trace) {
   ensureDir(path.dirname(layout.tracePath));
   fs.writeFileSync(layout.tracePath, JSON.stringify(trace, null, 2));
@@ -611,6 +623,7 @@ function main() {
     const qualitySlides = parsePipelineSlides(args.slides) || inferPipelineSlides(layout.projectRoot);
     applyPipelineQualityDefaults(args, layout, qualitySlides);
   validatePaths(args, layout);
+  const dependencyRequested = dependencyProfileRequested(layout.projectRoot);
   ensureDir(layout.outDir);
   ensureDir(layout.assetsDir);
 
@@ -659,6 +672,7 @@ function main() {
       refreshTraceArtifacts(trace, layout);
     }
 
+    refreshDependencyTrace(trace, layout, dependencyRequested);
     trace.postbuildValidation = { passed: false, timestamp: new Date().toISOString() };
     refreshTraceArtifacts(trace, layout);
     writeTrace(layout, trace);
@@ -679,6 +693,7 @@ function main() {
     }
 
     runNode('final contract validation', layout.enforceContractPath, validationArgs('final', args, layout), layout, env);
+    refreshDependencyTrace(trace, layout, dependencyRequested);
     trace.finalValidation = { passed: true, timestamp: new Date().toISOString() };
     trace.validation = { passed: true, timestamp: new Date().toISOString() };
     trace.completedTimeMs = Date.now();

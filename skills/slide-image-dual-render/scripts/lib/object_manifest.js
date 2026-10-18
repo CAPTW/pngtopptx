@@ -323,9 +323,12 @@ function toJSON() {
   };
 }
 
-function writeNativeManifest(file) {
+function writeNativeManifest(file, dependencySelection) {
+  // Only a loader-created selection can qualify this optional root descriptor.
+  const dependency = dependencySelection == null ? null : require('./pptxgenjs_dependency').dependencyDescriptor(dependencySelection);
   fs.mkdirSync(path.dirname(file), { recursive: true });
   const data = toJSON();
+  if (dependency) data.pptxgenjsDependency = dependency;
   fs.writeFileSync(file, JSON.stringify(data, null, 2), 'utf8');
   return data;
 }

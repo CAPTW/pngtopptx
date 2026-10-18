@@ -37,7 +37,9 @@ function runPreflightIfEnabled() {
 
 runPreflightIfEnabled();
 
-const pptxgen = require('pptxgenjs');
+const {loadPptxgenjsDependency, dependencyDescriptor} = require('./lib/pptxgenjs_dependency');
+const PPTXGENJS_DEPENDENCY = loadPptxgenjsDependency(PROJECT_ROOT);
+const pptxgen = PPTXGENJS_DEPENDENCY ? PPTXGENJS_DEPENDENCY.PptxGenJS : require('pptxgenjs');
 const { makePptxSurface } = require('./lib/atoms_pptx');
 const { makeHtmlSurface } = require('./lib/atoms_html');
 const { FONT, FONT_POLICY, PXW, PXH, persistFontResolutionManifest, FONT_MANIFEST_PATH } = require('./lib/kit');
@@ -275,6 +277,7 @@ function textFitFingerprint(){
   const fontUsagePath = process.env.DECK_FONT_USAGE ? path.resolve(process.env.DECK_FONT_USAGE) : '';
   const payload = {
     contract:'slide-image-dual-render.text-fit.v1',
+    ...(typeof PPTXGENJS_DEPENDENCY !== 'undefined' && PPTXGENJS_DEPENDENCY ? {pptxgenjsDependency:dependencyDescriptor(PPTXGENJS_DEPENDENCY)} : {}),
     slidesJs:hashFileIfPresent(SLIDES_PATH),
     atomsHtml:hashFileIfPresent(path.join(SCRIPT_ROOT, 'lib', 'atoms_html.js')),
     textContent:hashFileIfPresent(path.join(SCRIPT_ROOT, 'lib', 'text_content.js')),
@@ -371,6 +374,7 @@ function writeBuildTrace(target, pptxOut, htmlOut, textFitEvidence) {
   fs.mkdirSync(traceDir, { recursive: true });
   const buildTrace = {
     nativeObjectManifest: path.join(traceDir, 'native_object_manifest.json'),
+    ...(PPTXGENJS_DEPENDENCY ? {pptxgenjsDependency:dependencyDescriptor(PPTXGENJS_DEPENDENCY)} : {}),
     timestamp: new Date().toISOString(),
     startedAtMs: BUILD_STARTED_MS,
     finishedAtMs: Date.now(),
@@ -434,7 +438,7 @@ function writeBuildTrace(target, pptxOut, htmlOut, textFitEvidence) {
   });
   if(target==='html' || target==='both') buildHtml(htmlOut, { record: target === 'html' });
   const nativeManifestPath = path.join(PROJECT_ROOT, 'out', 'native_object_manifest.json');
-  OM.writeNativeManifest(nativeManifestPath);
+  OM.writeNativeManifest(nativeManifestPath, PPTXGENJS_DEPENDENCY);
   console.log('wrote', nativeManifestPath);
   persistFontResolutionManifest(FONT_MANIFEST_PATH);
   console.log('wrote', FONT_MANIFEST_PATH);
