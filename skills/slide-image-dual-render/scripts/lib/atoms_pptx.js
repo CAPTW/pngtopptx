@@ -1,6 +1,7 @@
 // atoms_pptx.js — pptxgenjs surface implementing unified atoms (PX coords).
 const { PXW, PXH, FONT, resolveRenderFont, fontMappingFor } = require('./kit');
 const OM = require('./object_manifest');
+const { prepareTextRuns } = require('./text_content');
 
 const SW = 13.333, SH = 7.5;
 const ix = px => +(px * SW / PXW).toFixed(3);
@@ -24,6 +25,33 @@ function safeLineGeom(x,y,w,h){
   return { x:nx, y:ny, w:nw, h:nh };
 }
 
+// Qualified expected xfrm, not proof of emitted OOXML or source fidelity. Use
+// the very same numeric inch arguments passed to PptxGenJS, never the rounded
+// diagnostic source bbox. PptxGenJS 4.0.1 treats values >=100 as EMU rather than
+// inches; degenerate/defaulted geometry is outside this bounded projection.
+// Only explicitly tagged calls receive evidence, preserving untagged records.
+function emitterGeometry(pptx, geometry, sourceRefs, normalization='none', lineIssue=null, lineFlips={}){
+  if(sourceRefs === undefined) return undefined;
+  const result = {
+    schemaVersion:'slide-image-dual-render.emitter-geometry.v1',
+    emitterVersion:pptx.version || null, units:'EMU', status:'UNSUPPORTED',
+    reason:null, sourceNormalization:normalization, transform:null,
+  };
+  if(pptx.version !== '4.0.1') result.reason = 'UNVERIFIED_PPTXGENJS_VERSION';
+  else if(Object.values(geometry).some(n => !Number.isFinite(n) || n < 0 || n >= 100)
+      || geometry.w <= 0 || geometry.h <= 0) result.reason = 'UNSUPPORTED_NUMERIC_GEOMETRY';
+  else {
+    const [x,y,cx,cy] = ['x','y','w','h'].map(key => Math.round(geometry[key] * 914400));
+    if(![x,y,cx,cy].every(Number.isSafeInteger) || cx <= 0 || cy <= 0) result.reason = 'UNSUPPORTED_NUMERIC_GEOMETRY';
+    else {
+      result.transform = {x,y,cx,cy,flipH:lineFlips.flipH === true,flipV:lineFlips.flipV === true,rotation:0};
+      result.reason = lineIssue;
+      result.status = lineIssue ? 'UNSUPPORTED' : 'PROJECTED';
+    }
+  }
+  return result;
+}
+
 function normalizedRunSize(value, fallback){
   const n = Number(value != null ? value : fallback);
   return Number.isFinite(n) && n > 0 ? n : 12;
@@ -34,7 +62,7 @@ function normalizedRunSize(value, fallback){
 // so every generated run must carry the effective font face and size.
 function toRuns(content, baseColor, baseFont, baseSize, sizeScale=1){
   if(Array.isArray(content)){
-    return content.map(r=>({ text:r.text, options:{
+    return prepareTextRuns(content).map(r=>({ text:r.text, options:{
       color:r.color||baseColor, bold:!!r.bold, italic:!!r.italic, breakLine:!!r.breakLine,
       fontFace:resolveRenderFont(r.fontFace||r.fontFamily||baseFont),
       fontSize:(r.fontSize != null || r.sz != null)
@@ -44,18 +72,49 @@ function toRuns(content, baseColor, baseFont, baseSize, sizeScale=1){
   }
   const str = String(content);
   if(str.indexOf('\n')>=0){
-    const parts = str.split('\n');
-    return parts.map((p,i)=>({ text:p, options:{
+    return prepareTextRuns(str).map(r=>({ text:r.text, options:{
       color:baseColor,
       fontFace:resolveRenderFont(baseFont),
       fontSize:normalizedRunSize(null, baseSize),
-      breakLine:i<parts.length-1,
+      breakLine:r.breakLine,
     } }));
   }
   return str;
 }
 
+// Canonical logical text of the OOXML emitted by the supported PptxGenJS text
+// path: decoded a:t content, a:br as LF, and LF between a:p paragraphs. Preserve
+// whitespace and Unicode; do not hash formatting or raw JSON. Consume toRuns'
+// result, not the author input (which is transformed for plain multiline text).
+// Preparation splits embedded LF before this projection. The fallback below
+// still models PptxGenJS multiline splitting; final breakLine does not add an
+// extra paragraph. XML normalizes remaining standalone CR to LF.
+// Qualified only against PptxGenJS 4.0.1 (actual runtime evidence is retained).
+// Unknown versions keep authored identity but receive no projected text digest.
+// Emitted-package regression tests guard these library-dependent semantics.
+function serializePptxText(runs){
+  const input = Array.isArray(runs) && runs.length ? runs : [{ text:Array.isArray(runs) ? '' : runs }];
+  const pieces = [];
+  for(const run of input){
+    const text = String(run.text || '').replace(/\r*\n/g, '\n');
+    if(text.includes('\n') && !text.endsWith('\n')){
+      for(const line of text.split('\n')) pieces.push({ text:line, breakLine:true });
+    } else {
+      pieces.push({ text, breakLine:!!(run.options && run.options.breakLine) });
+    }
+  }
+  return pieces.map((piece, index) =>
+    piece.text.replace(/\r\n?/g, '\n') + (piece.breakLine && index < pieces.length - 1 ? '\n' : '')
+  ).join('');
+}
+
 function makePptxSurface(pptx, slide, opts={}){
+  // Opt-in PNG/JPEG snapshots cost one embedded media entry per call.
+  // Omitted/false retains legacy reads and PPTX pathname deduplication.
+  const snapshotImages = opts.snapshotImages;
+  if ('snapshotImages' in opts && typeof snapshotImages !== 'boolean') {
+    throw new TypeError('snapshotImages must be a boolean when provided');
+  }
   let textIndex = 0;
   const slideNo = Number(opts.slideNo) || 1;
   const textFit = opts.textFit && typeof opts.textFit === 'object' ? opts.textFit : {};
@@ -63,14 +122,26 @@ function makePptxSurface(pptx, slide, opts={}){
   const textFitSafetyFactor = Number.isFinite(configuredSafety)
     ? Math.min(Math.max(configuredSafety, 0.8), 1)
     : 1;
-  return {
+  return OM.addSourceReferenceSupport({
     _pptx: pptx,
     bgFill(hex){ slide.background = { color: hex }; },
-    img(p, x,y,w,h){ OM.recordImage(p, x,y,w,h); slide.addImage({ path:p, x:ix(x), y:iy(y), w:ix(w), h:iy(h) }); },
+    img(p, x,y,w,h){
+      const geometry = {x:ix(x), y:iy(y), w:ix(w), h:iy(h)};
+      const refs = OM.sourceRefsFor(this, slideNo);
+      const snapshot = snapshotImages === true ? OM.captureImageSnapshot(p) : undefined;
+      OM.recordImage(p, x,y,w,h, refs, emitterGeometry(pptx, geometry, refs), snapshot);
+      // Data only: a path would let PptxGenJS alias distinct same-path snapshots.
+      // Supported altText preserves the legacy source-path description; objectName stays default.
+      const input = snapshot === undefined ? {path:p} : {data:OM.imageSnapshotData(snapshot, 'pptx'), altText:p};
+      slide.addImage({ ...input, ...geometry });
+    },
     rrect(x,y,w,h,o={}){
-      OM.record({ type:'panel', x,y,w,h, editable:true, source:'surface.rrect' });
+      const geometry = {x:ix(x), y:iy(y), w:ix(w), h:iy(h)};
+      const refs = OM.sourceRefsFor(this, slideNo);
+      OM.record({ type:'panel', x,y,w,h, editable:true, source:'surface.rrect',
+        ...(refs === undefined ? {} : {emitterGeometry:emitterGeometry(pptx, geometry, refs)}) }, refs);
       slide.addShape(pptx.ShapeType.roundRect, {
-        x:ix(x), y:iy(y), w:ix(w), h:iy(h),
+        ...geometry,
         fill:{ color:o.fill||'0B1B2D', transparency:o.fillTrans!=null?o.fillTrans:0 },
         line:{ color:o.line||'2A4A6E', width:linePt(o.lineW) },
         rectRadius: rad(o.radius!=null?o.radius:9),
@@ -78,25 +149,61 @@ function makePptxSurface(pptx, slide, opts={}){
       });
     },
     ell(x,y,w,h,o={}){
-      OM.record({ type:'shape', x,y,w,h, editable:true, source:'surface.ell' });
+      const geometry = {x:ix(x), y:iy(y), w:ix(w), h:iy(h)};
+      const refs = OM.sourceRefsFor(this, slideNo);
+      OM.record({ type:'shape', x,y,w,h, editable:true, source:'surface.ell',
+        ...(refs === undefined ? {} : {emitterGeometry:emitterGeometry(pptx, geometry, refs)}) }, refs);
       slide.addShape(pptx.ShapeType.ellipse, {
-        x:ix(x), y:iy(y), w:ix(w), h:iy(h),
+        ...geometry,
         fill:{ color:o.fill||'1F6FB5' }, line:{ color:o.line||o.fill||'1F6FB5', width:linePt(o.lineW) },
       });
     },
     chev(x,y,w,h,o={}){
-      OM.record({ type:'shape', x,y,w,h, editable:true, source:'surface.chev' });
+      const geometry = {x:ix(x), y:iy(y), w:ix(w), h:iy(h)};
+      const refs = OM.sourceRefsFor(this, slideNo);
+      OM.record({ type:'shape', x,y,w,h, editable:true, source:'surface.chev',
+        ...(refs === undefined ? {} : {emitterGeometry:emitterGeometry(pptx, geometry, refs)}) }, refs);
       slide.addShape(pptx.ShapeType.chevron, {
-        x:ix(x), y:iy(y), w:ix(w), h:iy(h),
+        ...geometry,
         fill:{ color:o.fill||'0C1C30', transparency:o.fillTrans!=null?o.fillTrans:0 },
         line:{ color:o.line||'2C547E', width:linePt(o.lineW) },
       });
     },
     ln(x,y,w,h,o={}){
-      OM.record({ type:'rule', x,y,w,h, editable:true, source:'surface.ln' });
       const g = safeLineGeom(x,y,w,h);
+      const geometry = {x:ix(g.x), y:iy(g.y), w:ix(g.w), h:iy(g.h)};
+      const refs = OM.sourceRefsFor(this, slideNo);
+      // A positive bounding box alone loses diagonal endpoint orientation.
+      // Keep existing axis normalization and derive only internal sign flips.
+      const sw = Number(w)||0, sh = Number(h)||0;
+      const diagonal = sw !== 0 && sh !== 0;
+      const direction = { ...(diagonal && sw < 0 ? {flipH:true} : {}),
+        ...(diagonal && sh < 0 ? {flipV:true} : {}) };
+      // Existing v1 consumers still reject signed direction. Only finite numeric
+      // authored inputs without caller transform options receive the v2 proof.
+      const lineIssue = refs === undefined ? null : (o.flipH || o.flipV || o.rotate) ? 'UNSUPPORTED_LINE_TRANSFORM'
+        : ((w < 0 || h < 0) && Number(w) !== 0 && Number(h) !== 0) ? 'UNSUPPORTED_LINE_DIRECTION' : null;
+      const evidence = emitterGeometry(pptx, geometry, refs, 'safe-line-geom-v1', lineIssue, direction);
+      if (evidence && evidence.reason === 'UNSUPPORTED_LINE_DIRECTION'
+          && [x,y,w,h].every(n => typeof n === 'number' && Number.isFinite(n))
+          && !['flipH','flipV','rotate'].some(key => key in Object(o))) {
+        // Shortest round-trip strings retain binary64 input values (and -0)
+        // through JSON. Rounded diagnostic bboxes cannot prove direction or
+        // projection. This is a producer claim, not semantic/runtime authority.
+        const exact = n => Object.is(n, -0) ? '-0' : String(n);
+        evidence.schemaVersion = 'slide-image-dual-render.emitter-geometry.v2';
+        evidence.status = 'PROJECTED';
+        evidence.reason = null;
+        evidence.sourceLine = {
+          units:'source-px', numberEncoding:'ecmascript-binary64-shortest-v1',
+          qualifier:'internal-sign-diagonal-v1',
+          x:exact(x), y:exact(y), w:exact(w), h:exact(h),
+        };
+      }
+      OM.record({ type:'rule', x,y,w,h, editable:true, source:'surface.ln',
+        ...(refs === undefined ? {} : {emitterGeometry:evidence}) }, refs);
       slide.addShape(pptx.ShapeType.line, {
-        x:ix(g.x), y:iy(g.y), w:ix(g.w), h:iy(g.h),
+        ...geometry, ...direction,
         line:{ color:o.color||'2A4A6E', width:linePt(o.width), dashType:o.dash||'solid' },
       });
     },
@@ -118,16 +225,30 @@ function makePptxSurface(pptx, slide, opts={}){
       const mappings = Array.isArray(content)
         ? content.map(r => fontMappingFor(r.fontFace||r.fontFamily||originalFont))
         : [fontMappingFor(originalFont)];
-      OM.recordText(content, x,y,w,h,'surface.txt', { originalFont, resolvedFont, fontMappings:mappings });
-      slide.addText(toRuns(content, o.color||'F2F7FC', originalFont, resolvedSize, sizeScale), {
-        x:ix(x), y:iy(y), w:ix(w), h:iy(h),
+      const runs = toRuns(content, o.color||'F2F7FC', originalFont, resolvedSize, sizeScale);
+      const textContent = serializePptxText(runs);
+      const textContentEmitterVersion = pptx.version || null;
+      const textContentIdentityError = textContentEmitterVersion !== '4.0.1'
+        ? 'UNVERIFIED_PPTXGENJS_VERSION'
+        : /[\u0000-\u0008\u000B\u000C\u000E-\u001F\uD800-\uDFFF\uFFFE\uFFFF]/u.test(textContent)
+          ? 'UNSUPPORTED_XML_TEXT' : null;
+      const geometry = {x:ix(x), y:iy(y), w:ix(w), h:iy(h)};
+      const refs = OM.sourceRefsFor(this, slideNo);
+      OM.recordText(content, x,y,w,h,'surface.txt', {
+        originalFont, resolvedFont, fontMappings:mappings,
+        textContent, textContentEmitterVersion, textContentIdentityError,
+        textContentSerialization:'pptxgenjs-paragraph-text-v1', representation:'native-text',
+        ...(refs === undefined ? {} : {emitterGeometry:emitterGeometry(pptx, geometry, refs)}),
+      }, refs);
+      slide.addText(runs, {
+        ...geometry,
         fontFace:resolvedFont, fontSize:resolvedSize, color:o.color||'F2F7FC',
         bold:!!o.bold, italic:!!o.italic, align:o.align||'left', valign:o.valign||'middle',
         lineSpacingMultiple:o.lh!=null?o.lh:1.0, charSpacing:o.cs,
         margin:o.margin!=null?o.margin:0, wrap:o.wrap!=null?o.wrap:true, shrinkText:!!o.shrink,
       });
     },
-  };
+  }, slideNo);
 }
 
 module.exports = { makePptxSurface, ix, iy, safeLineGeom, linePt };

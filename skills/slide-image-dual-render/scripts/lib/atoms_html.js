@@ -2,6 +2,7 @@
 // Produces a <div class="slide"> with absolutely-positioned children.
 const fs = require('fs');
 const OM = require('./object_manifest');
+const { prepareTextRuns } = require('./text_content');
 const { PXW, PXH, FONT_POLICY, resolveRenderFont, fontMappingFor } = require('./kit');
 const { _helpers } = require('./profile');
 
@@ -9,13 +10,11 @@ const SW = 13.333;
 const PT2PX = PXW / SW / 72;
 const FONT_STACK = FONT_POLICY.htmlCssFamily || `${FONT_POLICY.resolved}, sans-serif`;
 const EPS = 0.0001;
-const imgCache = new Map();
 function dataURI(p){
-  if(imgCache.has(p)) return imgCache.get(p);
+  // Read each call: regenerated assets may reuse the same pathname.
   const b = fs.readFileSync(p);
   const ext = p.toLowerCase().endsWith('.jpg')||p.toLowerCase().endsWith('.jpeg') ? 'jpeg' : 'png';
   const uri = `data:image/${ext};base64,${b.toString('base64')}`;
-  imgCache.set(p, uri);
   return uri;
 }
 const esc = t => String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -57,15 +56,21 @@ function cssStack(original){
 
 function runHTML(content, baseColor, baseFont){
   if(Array.isArray(content)){
-    return content.map(r=>{
+    return prepareTextRuns(content).map(r=>{
       const st = `color:#${(r.color||baseColor)};font-family:${cssStack(r.fontFace||r.fontFamily||baseFont)};${r.bold?'font-weight:700;':''}${r.italic?'font-style:italic;':''}`;
-      return `<span style="${st}">${esc(r.text)}</span>${r.breakLine?'<br>':''}`;
+      return `<span style="${st}">${esc(r.text)}</span>${r.breakLine?'\n':''}`;
     }).join('');
   }
-  return esc(String(content)).replace(/\n/g,'<br>');
+  return prepareTextRuns(content).map(r=>esc(r.text)+(r.breakLine?'\n':'')).join('');
 }
 
 function makeHtmlSurface(opts={}){
+  // Opt-in PNG/JPEG snapshots cost one embedded media entry per call.
+  // Omitted/false retains legacy reads and PPTX pathname deduplication.
+  const snapshotImages = opts.snapshotImages;
+  if ('snapshotImages' in opts && typeof snapshotImages !== 'boolean') {
+    throw new TypeError('snapshotImages must be a boolean when provided');
+  }
   const parts = [];
   let bgColor = '020812';
   let textIndex = 0;
@@ -76,12 +81,15 @@ function makeHtmlSurface(opts={}){
     _bg(){ return bgColor; },
     bgFill(hex){ bgColor = hex; },
     img(p, x,y,w,h){
-      OM.recordImage(p, x,y,w,h);
-      if(textOnly) return;
-      parts.push(`<img src="${dataURI(p)}" style="position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;object-fit:fill;">`);
+      const refs = OM.sourceRefsFor(this, slideNo);
+      if(textOnly){ OM.recordImage(p, x,y,w,h, refs); return; }
+      const snapshot = snapshotImages === true ? OM.captureImageSnapshot(p) : undefined;
+      OM.recordImage(p, x,y,w,h, refs, undefined, snapshot);
+      const uri = snapshot === undefined ? dataURI(p) : OM.imageSnapshotData(snapshot, 'html');
+      parts.push(`<img src="${uri}" style="position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;object-fit:fill;">`);
     },
     rrect(x,y,w,h,o={}){
-      OM.record({ type:'panel', x,y,w,h, editable:true, source:'surface.rrect' });
+      OM.record({ type:'panel', x,y,w,h, editable:true, source:'surface.rrect' }, OM.sourceRefsFor(this, slideNo));
       if(textOnly) return;
       const a = alpha(o.fillTrans);
       const bg = o.fill ? rgba(o.fill, a) : 'transparent';
@@ -89,12 +97,12 @@ function makeHtmlSurface(opts={}){
       parts.push(`<div style="position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;background:${bg};border:${lineWidthPx(o.lineW)}px solid #${o.line||'2A4A6E'};border-radius:${o.radius!=null?o.radius:9}px;box-sizing:border-box;${sh}"></div>`);
     },
     ell(x,y,w,h,o={}){
-      OM.record({ type:'shape', x,y,w,h, editable:true, source:'surface.ell' });
+      OM.record({ type:'shape', x,y,w,h, editable:true, source:'surface.ell' }, OM.sourceRefsFor(this, slideNo));
       if(textOnly) return;
       parts.push(`<div style="position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;background:#${o.fill||'1F6FB5'};border:${lineWidthPx(o.lineW)}px solid #${o.line||o.fill||'1F6FB5'};border-radius:50%;box-sizing:border-box;"></div>`);
     },
     chev(x,y,w,h,o={}){
-      OM.record({ type:'shape', x,y,w,h, editable:true, source:'surface.chev' });
+      OM.record({ type:'shape', x,y,w,h, editable:true, source:'surface.chev' }, OM.sourceRefsFor(this, slideNo));
       if(textOnly) return;
       const a = alpha(o.fillTrans);
       const bg = o.fill ? rgba(o.fill, a) : 'transparent';
@@ -105,7 +113,7 @@ function makeHtmlSurface(opts={}){
       parts.push(`<div style="position:absolute;left:${x+bw}px;top:${y+bw}px;width:${iw}px;height:${ih}px;background:${bg};clip-path:${chevClip(iw,ih)};"></div>`);
     },
     ln(x,y,w,h,o={}){
-      OM.record({ type:'rule', x,y,w,h, editable:true, source:'surface.ln' });
+      OM.record({ type:'rule', x,y,w,h, editable:true, source:'surface.ln' }, OM.sourceRefsFor(this, slideNo));
       if(textOnly) return;
       const g = normalizeLineGeom(x,y,w,h);
       const col = `#${o.color||'2A4A6E'}`;
@@ -114,7 +122,11 @@ function makeHtmlSurface(opts={}){
       if(g.orientation==='horizontal'){ parts.push(`<div style="position:absolute;left:${g.x}px;top:${g.y}px;width:${g.w}px;height:0;border-top:${bw}px ${style} ${col};"></div>`); }
       else if(g.orientation==='vertical'){ parts.push(`<div style="position:absolute;left:${g.x}px;top:${g.y}px;height:${g.h}px;width:0;border-left:${bw}px ${style} ${col};"></div>`); }
       else { // diagonal fallback: thin rotated bar (rare)
-        parts.push(`<div style="position:absolute;left:${g.x}px;top:${g.y}px;width:${Math.hypot(g.w,g.h)}px;height:0;border-top:${bw}px ${style} ${col};transform-origin:0 0;transform:rotate(${Math.atan2(g.h,g.w)}rad);"></div>`);
+        // Preserve the normalized/minimum-size box, but start at its signed
+        // endpoint corner instead of always drawing from top-left to bottom-right.
+        const dx = Number(w) < 0 ? -g.w : g.w, dy = Number(h) < 0 ? -g.h : g.h;
+        const sx = g.x + (dx < 0 ? g.w : 0), sy = g.y + (dy < 0 ? g.h : 0);
+        parts.push(`<div style="position:absolute;left:${sx}px;top:${sy}px;width:${Math.hypot(g.w,g.h)}px;height:0;border-top:${bw}px ${style} ${col};transform-origin:0 0;transform:rotate(${Math.atan2(dy,dx)}rad);"></div>`);
       }
     },
     txt(content, x,y,w,h, o={}){
@@ -124,20 +136,20 @@ function makeHtmlSurface(opts={}){
       const mappings = Array.isArray(content)
         ? content.map(r => fontMappingFor(r.fontFace||r.fontFamily||originalFont))
         : [fontMappingFor(originalFont)];
-      OM.recordText(content, x,y,w,h,'surface.txt', { originalFont, resolvedFont, fontMappings:mappings });
+      OM.recordText(content, x,y,w,h,'surface.txt', { originalFont, resolvedFont, fontMappings:mappings }, OM.sourceRefsFor(this, slideNo));
       const fpx = (o.sz||12) * PT2PX;
       const ai = o.valign==='top'?'flex-start':o.valign==='bottom'?'flex-end':'center';
       const jc = o.align==='center'?'center':o.align==='right'?'flex-end':'flex-start';
       const ta = o.align||'left';
-      const ws = (o.wrap===false || o.shrink) ? 'white-space:nowrap;' : '';
+      const ws = (o.wrap===false || o.shrink) ? 'white-space:pre;' : 'white-space:pre-wrap;';
       const ls = o.cs!=null ? `letter-spacing:${o.cs}px;` : '';
-      const innerWs = o.shrink ? 'white-space:nowrap;' : '';
+      const innerWs = o.shrink ? 'white-space:pre;' : '';
       const inner = `<div style="width:100%;text-align:${ta};line-height:${o.lh!=null?o.lh:1.0};${ls}${innerWs}">${runHTML(content, o.color||'F2F7FC', originalFont)}</div>`;
       const sa = o.shrink ? ' data-shrink="1"' : '';
       parts.push(`<div${sa} data-text-fit-id="${textFitId}" data-requested-font-size-pt="${Number(o.sz||12)}" data-original-font="${esc(originalFont)}" data-resolved-font="${esc(resolvedFont)}" style="position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;display:flex;align-items:${ai};justify-content:${jc};overflow:hidden;font-family:${cssStack(originalFont)};font-size:${fpx.toFixed(1)}px;color:#${o.color||'F2F7FC'};${o.bold?'font-weight:700;':''}${o.italic?'font-style:italic;':''}${ws}box-sizing:border-box;">${inner}</div>`);
     },
   };
-  return S;
+  return OM.addSourceReferenceSupport(S, slideNo);
 }
 
 module.exports = { makeHtmlSurface, PXW, PXH, PT2PX, normalizeLineGeom, lineWidthPx, FONT_STACK };

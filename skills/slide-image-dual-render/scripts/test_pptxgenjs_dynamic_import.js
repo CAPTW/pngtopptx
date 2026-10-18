@@ -1,0 +1,50 @@
+"use strict";
+// Synthetic serializer-unit fixture. One package only; no browser/metrics/QA.
+const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),os=require('node:os'),crypto=require('node:crypto'),vm=require('node:vm');
+const scripts=process.env.DYNAMIC_IMPORT_TEST_SCRIPTS||__dirname,lib=path.join(scripts,'lib');
+const root=process.env.DYNAMIC_IMPORT_TEST_OUTPUT||fs.mkdtempSync(path.join(os.tmpdir(),'pptx-dynamic-import-'));
+const sha=b=>crypto.createHash('sha256').update(b).digest('hex'),hash=p=>sha(fs.readFileSync(p));
+const original=require.resolve('pptxgenjs'),originalSha='873d182a8e2e1c0b5e522ef146117936b96b9b2024667bd4c1de59e2b031d27a';
+assert.equal(hash(original),originalSha);
+const resultSha='9982d975f1e313be401af8472420e5d5af59f9d9b6707952bf9b879c2b3560e2';
+const cases=[{"name":"single-space","content":"한글 English","expected":"한글 English"},{"name":"repeated-spaces","content":"한글  English","expected":"한글  English"},{"name":"boundary-spaces","content":"  한글  English  ","expected":"  한글  English  "},{"name":"LF","content":"A\nB","expected":"A\nB"},{"name":"CRLF","content":"A\r\nB","expected":"A\nB"},{"name":"leading-LF","content":"\nA","expected":"\nA"},{"name":"trailing-LF","content":"A\n","expected":"A\n"},{"name":"consecutive-LF","content":"A\n\nB","expected":"A\n\nB"},{"name":"empty","content":"","expected":""},{"name":"empty-lines","content":"\n\n","expected":"\n\n"},{"name":"rich-embedded-LF","content":[{"text":"A\nB"},{"text":"C"}],"expected":"A\nBC"},{"name":"rich-trailing-LF","content":[{"text":"A\n"},{"text":"B"}],"expected":"A\nB"},{"name":"rich-leading-LF","content":[{"text":"A"},{"text":"\nB"}],"expected":"A\nB"},{"name":"rich-CRLF","content":[{"text":"A\r\nB"},{"text":"C"}],"expected":"A\nBC"},{"name":"cross-run-CRLF","content":[{"text":"A\r","bold":true},{"text":"\nB","italic":true}],"expected":"A\nB"},{"name":"cross-empty-run-CRLF","content":[{"text":"A\r"},{"text":""},{"text":"\nB"}],"expected":"A\nB"},{"name":"empty-rich-run","content":[{"text":"A"},{"text":""},{"text":"B"}],"expected":"AB"},{"name":"explicit-break","content":[{"text":"A","breakLine":true},{"text":"B"}],"expected":"A\nB"},{"name":"explicit-and-embedded","content":[{"text":"A\nB","breakLine":true},{"text":"C"}],"expected":"A\nB\nC"},{"name":"explicit-and-trailing","content":[{"text":"A\n","breakLine":true},{"text":"B"}],"expected":"A\n\nB"},{"name":"entities","content":"한글 & <tag> \"quoted\"","expected":"한글 & <tag> \"quoted\""},{"name":"standalone-CR","content":"A\rB","expected":"A\nB"},{"name":"rich-standalone-CR","content":[{"text":"A\rB"},{"text":"C"}],"expected":"A\nBC"},{"name":"final-explicit-break","content":[{"text":"A","breakLine":true}],"expected":"A"}];
+function options(bytes,customVm=vm){
+ const source=fs.readFileSync(path.join(lib,'pptxgenjs_dependency.js'),'utf8'),start=source.indexOf('function builtinImportOptions('),end=source.indexOf('\nfunction loadPptxgenjsDependency(',start);
+ assert(start>=0&&end>start,'reviewed fixed-site import helper is absent');
+ const helper=vm.runInNewContext('('+source.slice(start,end).trim()+')',{vm:customVm,fail:m=>{throw Error(m);}});return helper(bytes);
+}
+test('exact three-site contract accepts only the audited built-in literals',()=>{
+ const bytes=fs.readFileSync(original);assert.equal(options(bytes).importModuleDynamically,vm.constants.USE_MAIN_CONTEXT_DEFAULT_LOADER);
+ for(const wrong of [bytes.toString().replace("import('node:fs')","import('other-package')"),bytes.toString().replace("import('node:fs')","import(target)"),bytes.toString()+"\nimport('node:fs');",bytes.toString().replace("import('node:https')","require('node:https')")])assert.throws(()=>options(Buffer.from(wrong)),/built-in-only/);
+});
+test('unsupported Node has no alternate loader fallback and absence remains default',()=>{
+ const bytes=fs.readFileSync(original);for(const value of [{},{constants:{}},{constants:{USE_MAIN_CONTEXT_DEFAULT_LOADER:()=>{}}}])assert.throws(()=>options(bytes,value),/unavailable/);
+ const project=path.join(root,'absent');fs.mkdirSync(path.join(project,'analysis'),{recursive:true});const api=require(path.join(lib,'pptxgenjs_dependency'));assert.equal(api.loadPptxgenjsDependency(project),null);assert(!fs.existsSync(path.join(project,'.cache')));
+});
+test('standard built-in loader preserves fs/https default and fs.promises named interop',async()=>{
+ const run=vm.compileFunction("return (async()=>{const fs=await import('node:fs'),https=await import('node:https');return {fs:fs.default,https:https.default,promises:fs.promises};})()",[],{filename:original,...options(fs.readFileSync(original))});
+ const result=await run();assert.equal(result.fs,require('node:fs'));assert.equal(result.https,require('node:https'));assert.equal(result.promises,require('node:fs').promises);
+});
+test('one real patched-loader package preserves 24 official text cases and bound manifest',async()=>{
+ const project=path.join(root,'project'),out=path.join(project,'out');fs.mkdirSync(path.join(project,'analysis'),{recursive:true});fs.mkdirSync(out,{recursive:true});assert(!fs.existsSync(path.join(out,'unit-text.pptx')),'one-emission root already used');
+ const request={schemaVersion:'slide-image-dual-render.pptxgenjs-dependency-request.v1',profile:'pptxgenjs-4.0.1-paragraph-properties-v1'};fs.writeFileSync(path.join(project,'analysis/pptxgenjs_dependency.json'),JSON.stringify(request)+'\n');
+ for(const key of Object.keys(process.env))if(key.startsWith('DECK_'))delete process.env[key];Object.assign(process.env,{HOME:path.join(root,'empty-home'),DECK_PROJECT_ROOT:project,DECK_ASSETS:path.join(root,'assets'),DECK_FONT:'sans-serif',DECK_FONT_INSTALL_DECISION:'unavailable',DECK_PXW:'1920',DECK_PXH:'1080'});fs.mkdirSync(process.env.HOME,{recursive:true});fs.mkdirSync(process.env.DECK_ASSETS,{recursive:true});
+ const inputs={schema:'invented-serializer-unit-v1',productionJob:false,approval:false,sourceImageMeaning:'Synthetic one-pixel provenance placeholder; not a rendering of these text inputs',canvas:[1920,1080],textFit:{},fontOptions:{sz:12},cases};
+ const inputPath=path.join(root,'input-manifest.json');fs.writeFileSync(inputPath,JSON.stringify(inputs,null,2)+'\n');
+ const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aQn8AAAAASUVORK5CYII=','base64');const pngPath=path.join(root,'source-placeholder.png');fs.writeFileSync(pngPath,png);
+ const advisoryPath=path.join(root,'advisory-context.json');fs.writeFileSync(advisoryPath,JSON.stringify({schema:'unit-advisory-v1',decisions:[],semanticAuthority:false})+'\n');
+ const contextPath=path.join(root,'fixture-context.json');fs.writeFileSync(contextPath,JSON.stringify({schema:'unit-context-v1',inputSha256:hash(inputPath),sourceSha256:hash(pngPath),advisorySha256:hash(advisoryPath),productionJob:false})+'\n');
+ const bindings={jobContentHash:hash(contextPath),sourcePngSha256:hash(pngPath),measurementInventorySha256:hash(inputPath),reviewArtifactSha256:hash(advisoryPath)};
+ const api=require(path.join(lib,'pptxgenjs_dependency')),start=process.hrtime.bigint(),selected=api.loadPptxgenjsDependency(project),descriptor=api.dependencyDescriptor(selected),selectedAt=process.hrtime.bigint();
+ assert.equal(descriptor.originalEntryPath,original);assert.equal(descriptor.resultSha256,resultSha);assert.equal(descriptor.loaderSha256,hash(path.join(lib,'pptxgenjs_dependency.js')));
+ const {makePptxSurface}=require(path.join(lib,'atoms_pptx')),OM=require(path.join(lib,'object_manifest')),p=new selected.PptxGenJS();p.defineLayout({name:'SOURCE',width:13.333,height:7.5});p.layout='SOURCE';const slide=p.addSlide();
+ OM.reset();OM.setEnabled(true);OM.setCurrentSlide(1);const surface=makePptxSurface(p,slide,{slideNo:1,textFit:{}}),authority=Object.fromEntries(['semantic_truth','text_removal','native_admission','vector_eligibility','quality_accepted'].map(k=>[k,false]));
+ for(let i=0;i<24;i++){const row=cases[i];surface.withSourceRefs({schemaVersion:'slide-image-dual-render.source-refs.v1',slide:1,bindings,claim:{kind:'extra',groupId:'unit-'+i,purpose:'unresolved'},authority}).txt(JSON.parse(JSON.stringify(row.content)),20,10+i*30,700,25,{sz:12});}
+ const manifestPath=path.join(out,'native_object_manifest.json'),manifest=OM.writeNativeManifest(manifestPath,selected);assert.deepEqual(manifest.pptxgenjsDependency,descriptor);
+ for(let i=0;i<24;i++){const row=manifest.slides['1'].objects[i];assert.equal(row.textContentSha256,sha(Buffer.from(cases[i].expected)));assert.deepEqual(row.sourceRefs.bindings,bindings);assert.equal(row.emitterGeometry.status,'PROJECTED');}
+ const builtAt=process.hrtime.bigint();let emissions=0;emissions++;const bytes=await p.write({outputType:'nodebuffer'}),endedAt=process.hrtime.bigint();const packagePath=path.join(out,'unit-text.pptx');fs.writeFileSync(packagePath,bytes,{flag:'wx'});
+ assert.equal(hash(original),originalSha);assert.equal(require.resolve('pptxgenjs'),original);assert.deepEqual(api.inspectPptxgenjsDependency(project),descriptor);
+ const loaded=Object.keys(require.cache).filter(p=>p.startsWith(scripts+path.sep)).sort().map(p=>({path:p,sha256:hash(p)}));
+ fs.writeFileSync(path.join(root,'serializer-result.json'),JSON.stringify({scope:'Actual serializer unit fixture; no production preparation/build/QA/visual claim',emissionCount:emissions,objectCount:24,inputManifestSha256:hash(inputPath),bindings,descriptor,package:{path:packagePath,sha256:sha(bytes),bytes:bytes.length},manifest:{path:manifestPath,sha256:hash(manifestPath)},loadedRendererModules:loaded,original:{path:original,sha256:originalSha,unchanged:true},pythonPreparationPathQualified:false,textFit:'Requested size only; no measured fit',timingSeconds:{loader:Number(selectedAt-start)/1e9,surfaceAndManifest:Number(builtAt-selectedAt)/1e9,serialization:Number(endedAt-builtAt)/1e9,total:Number(endedAt-start)/1e9}},null,2)+'\n');
+ assert.equal(emissions,1);assert.equal(manifest.slides['1'].objects.length,24);
+});
