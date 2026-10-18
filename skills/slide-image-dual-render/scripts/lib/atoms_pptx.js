@@ -69,11 +69,15 @@ function makePptxSurface(pptx, slide, opts={}){
     img(p, x,y,w,h){ OM.recordImage(p, x,y,w,h); slide.addImage({ path:p, x:ix(x), y:iy(y), w:ix(w), h:iy(h) }); },
     rrect(x,y,w,h,o={}){
       OM.record({ type:'panel', x,y,w,h, editable:true, source:'surface.rrect' });
-      slide.addShape(pptx.ShapeType.roundRect, {
+      const radiusInches = rad(o.radius!=null?o.radius:9);
+      // PptxGenJS omits a zero rectRadius adjustment, leaving roundRect rounded.
+      // An explicit positive radius below the existing inch precision is square too.
+      const square = o.radius === 0 || (typeof o.radius === 'number' && o.radius > 0 && radiusInches === 0);
+      slide.addShape(square ? pptx.ShapeType.rect : pptx.ShapeType.roundRect, {
         x:ix(x), y:iy(y), w:ix(w), h:iy(h),
         fill:{ color:o.fill||'0B1B2D', transparency:o.fillTrans!=null?o.fillTrans:0 },
         line:{ color:o.line||'2A4A6E', width:linePt(o.lineW) },
-        rectRadius: rad(o.radius!=null?o.radius:9),
+        rectRadius: radiusInches,
         shadow: o.shadow?shadow():undefined,
       });
     },
