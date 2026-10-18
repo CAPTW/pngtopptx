@@ -58,12 +58,35 @@ test('negative numeric zero also uses square PPTX geometry', () => {
 });
 
 test('positive radii keep roundRect and the existing source-pixel conversion', () => {
-  // A small positive radius that rounds to zero must not acquire new semantics.
-  for (const radius of [12, 9, 0.00001]) {
+  for (const radius of [12, 9]) {
     const call = capture({ ...style, radius });
     assert.equal(call.type, pptx.ShapeType.roundRect);
     assert.equal(call.options.rectRadius, radiusInches(radius));
     assert.ok(html({ ...style, radius }).includes(`border-radius:${radius}px;`));
+  }
+});
+
+test('positive radius underflow uses square geometry at existing inch precision', () => {
+  const boundary = 0.0005 * 640 / 13.333;
+  for (const radius of [Number.MIN_VALUE, 0.00001, boundary / 2, boundary * (1 - 1e-6)]) {
+    assert.ok(radius > 0);
+    assert.equal(radiusInches(radius), 0);
+    const call = capture({ ...style, radius });
+    assert.equal(call.type, pptx.ShapeType.rect);
+    assert.deepEqual(call.options, capture({ ...style, radius:0 }).options);
+    assert.ok(html({ ...style, radius }).includes(`border-radius:${radius}px;`));
+  }
+  const above = boundary * (1 + 1e-6);
+  assert.equal(radiusInches(above), 0.001);
+  assert.equal(capture({ radius:above }).type, pptx.ShapeType.roundRect);
+  assert.equal(capture({ radius:above }).options.rectRadius, 0.001);
+});
+
+test('positive underflow handling does not reinterpret legacy nonnumeric or negative inputs', () => {
+  for (const radius of ['0', '0.00001', false, -0.00001]) {
+    const call = capture({ radius });
+    assert.equal(call.type, pptx.ShapeType.roundRect);
+    assert.equal(call.options.rectRadius, radiusInches(radius));
   }
 });
 
@@ -116,6 +139,20 @@ test('actual PptxGenJS serialization retains positive rounded adjustments', asyn
 
 test('actual PptxGenJS serialization retains the omitted-radius rounded default', async () => {
   const geometry = await serializedGeometry(style);
+  assert.equal(geometry.type, 'roundRect');
+  assert.match(geometry.adjustments, /<a:gd name="adj" fmla="val [1-9][0-9]*"\s*\/>/);
+});
+
+test('actual PptxGenJS positive underflow never falls back to preset rounding', async () => {
+  const boundary = 0.0005 * 640 / 13.333;
+  const geometry = await serializedGeometry({ ...style, radius:boundary * (1 - 1e-6) });
+  assert.equal(geometry.type, 'rect');
+  assert.doesNotMatch(geometry.adjustments, /<a:gd /);
+});
+
+test('actual PptxGenJS positive radius above the rounding boundary remains rounded', async () => {
+  const boundary = 0.0005 * 640 / 13.333;
+  const geometry = await serializedGeometry({ ...style, radius:boundary * (1 + 1e-6) });
   assert.equal(geometry.type, 'roundRect');
   assert.match(geometry.adjustments, /<a:gd name="adj" fmla="val [1-9][0-9]*"\s*\/>/);
 });
