@@ -76,12 +76,12 @@ function makeHtmlSurface(opts={}){
     _bg(){ return bgColor; },
     bgFill(hex){ bgColor = hex; },
     img(p, x,y,w,h){
-      OM.recordImage(p, x,y,w,h);
+      OM.recordImage(p, x,y,w,h, OM.sourceRefsFor(this, slideNo));
       if(textOnly) return;
       parts.push(`<img src="${dataURI(p)}" style="position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;object-fit:fill;">`);
     },
     rrect(x,y,w,h,o={}){
-      OM.record({ type:'panel', x,y,w,h, editable:true, source:'surface.rrect' });
+      OM.record({ type:'panel', x,y,w,h, editable:true, source:'surface.rrect' }, OM.sourceRefsFor(this, slideNo));
       if(textOnly) return;
       const a = alpha(o.fillTrans);
       const bg = o.fill ? rgba(o.fill, a) : 'transparent';
@@ -89,12 +89,12 @@ function makeHtmlSurface(opts={}){
       parts.push(`<div style="position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;background:${bg};border:${lineWidthPx(o.lineW)}px solid #${o.line||'2A4A6E'};border-radius:${o.radius!=null?o.radius:9}px;box-sizing:border-box;${sh}"></div>`);
     },
     ell(x,y,w,h,o={}){
-      OM.record({ type:'shape', x,y,w,h, editable:true, source:'surface.ell' });
+      OM.record({ type:'shape', x,y,w,h, editable:true, source:'surface.ell' }, OM.sourceRefsFor(this, slideNo));
       if(textOnly) return;
       parts.push(`<div style="position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;background:#${o.fill||'1F6FB5'};border:${lineWidthPx(o.lineW)}px solid #${o.line||o.fill||'1F6FB5'};border-radius:50%;box-sizing:border-box;"></div>`);
     },
     chev(x,y,w,h,o={}){
-      OM.record({ type:'shape', x,y,w,h, editable:true, source:'surface.chev' });
+      OM.record({ type:'shape', x,y,w,h, editable:true, source:'surface.chev' }, OM.sourceRefsFor(this, slideNo));
       if(textOnly) return;
       const a = alpha(o.fillTrans);
       const bg = o.fill ? rgba(o.fill, a) : 'transparent';
@@ -105,7 +105,7 @@ function makeHtmlSurface(opts={}){
       parts.push(`<div style="position:absolute;left:${x+bw}px;top:${y+bw}px;width:${iw}px;height:${ih}px;background:${bg};clip-path:${chevClip(iw,ih)};"></div>`);
     },
     ln(x,y,w,h,o={}){
-      OM.record({ type:'rule', x,y,w,h, editable:true, source:'surface.ln' });
+      OM.record({ type:'rule', x,y,w,h, editable:true, source:'surface.ln' }, OM.sourceRefsFor(this, slideNo));
       if(textOnly) return;
       const g = normalizeLineGeom(x,y,w,h);
       const col = `#${o.color||'2A4A6E'}`;
@@ -124,7 +124,7 @@ function makeHtmlSurface(opts={}){
       const mappings = Array.isArray(content)
         ? content.map(r => fontMappingFor(r.fontFace||r.fontFamily||originalFont))
         : [fontMappingFor(originalFont)];
-      OM.recordText(content, x,y,w,h,'surface.txt', { originalFont, resolvedFont, fontMappings:mappings });
+      OM.recordText(content, x,y,w,h,'surface.txt', { originalFont, resolvedFont, fontMappings:mappings }, OM.sourceRefsFor(this, slideNo));
       const fpx = (o.sz||12) * PT2PX;
       const ai = o.valign==='top'?'flex-start':o.valign==='bottom'?'flex-end':'center';
       const jc = o.align==='center'?'center':o.align==='right'?'flex-end':'flex-start';
@@ -137,7 +137,7 @@ function makeHtmlSurface(opts={}){
       parts.push(`<div${sa} data-text-fit-id="${textFitId}" data-requested-font-size-pt="${Number(o.sz||12)}" data-original-font="${esc(originalFont)}" data-resolved-font="${esc(resolvedFont)}" style="position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;display:flex;align-items:${ai};justify-content:${jc};overflow:hidden;font-family:${cssStack(originalFont)};font-size:${fpx.toFixed(1)}px;color:#${o.color||'F2F7FC'};${o.bold?'font-weight:700;':''}${o.italic?'font-style:italic;':''}${ws}box-sizing:border-box;">${inner}</div>`);
     },
   };
-  return S;
+  return OM.addSourceReferenceSupport(S, slideNo);
 }
 
 module.exports = { makeHtmlSurface, PXW, PXH, PT2PX, normalizeLineGeom, lineWidthPx, FONT_STACK };

@@ -90,6 +90,57 @@ export DECK_PROFILE="$PWD/styles/clinical-dark.json"   # the classified style fo
 uses the original built-in dark palette; with it set, the palette, requested font, background, and
 icon colors all follow that profile. The final font still passes through the parity font policy below.
 
+## Optional source-reference provenance
+
+Both official surfaces expose `s.withSourceRefs(metadata)`. It returns a tagged
+view of the same surface: drawing options, coordinates, text fitting and output
+construction are unchanged. Pass that view to existing kit helpers, or call its
+`img`, `rrect`, `ell`, `chev`, `ln` and `txt` methods. Each recorded call gains a
+`sourceRefs` field; multiple calls remain separate rows. `bgFill` still has no
+object-manifest row. Without this opt-in, manifest shape and counts are unchanged.
+
+The metadata is a strict JSON-shaped object, normalized and deeply frozen:
+
+- `schemaVersion`: `slide-image-dual-render.source-refs.v1`
+- `slide`: the positive integer source slide number
+- `bindings`: exact lowercase SHA256 strings named `jobContentHash`,
+  `sourcePngSha256`, `measurementInventorySha256`, `reviewArtifactSha256`, copied
+  from the current bound reconstruction job and its classification-review artifact
+- `claim`: either `{kind: 'observation', groupId, source, glyphMembers, disposition}`
+  or `{kind: 'extra', groupId, purpose}`
+- Each `source` / `glyphMembers` entry is `{collection, observation_id}`. Collections
+  are `text_blocks`, `suppressed_text`, `region_candidate_evidence.candidates`
+- Observation `disposition` is `linked`, `unresolved` or `deferred`. Explicit glyph
+  members must be candidate references under a linked protected-text primary claim
+- Extra `purpose` is `decorative`, `background` or `unresolved`
+- `authority`: exactly `semantic_truth`, `text_removal`, `native_admission`,
+  `vector_eligibility`, `quality_accepted`, all literal `false`
+
+The normalized metadata has a 64 KiB per-record transport bound. No confidence,
+visual-quality or candidate-count policy is inferred from that limit. IDs stay
+namespaced; repeating a group across calls is allowed only with identical claims.
+Within a recorded slide, bindings must agree and one observation cannot belong
+to different groups. Inventory existence and reviewed semantic roles are checked
+by the downstream accounting consumer, not by this transport.
+
+Keep uncertain or disputed observations unresolved/deferred. These are declared
+source links, not verified recognition, permission to remove text, vector admission,
+or proof of successful PPTX representation. A helper can emit mixed object types;
+tag propagation does not certify that such a group is role-compatible.
+
+Tags are receiver-local: retained and nested tagged views cannot contaminate
+untagged calls. Extracted tagged primitive methods retain their tagged origin;
+an explicit `call`/`apply` receiver retains its ordinary meaning and can select
+another tagged or untagged view. Later changes to the input metadata cannot alter
+recorded provenance. The official recorder still runs before the backend drawing
+call, so its manifest is surface-call evidence, not serialization attestation.
+
+This API does not generate `surface_call_accounting.json`. After an official render,
+a consumer can derive exact manifest pointers and row hashes from these annotations
+and validate the full source/review/accounting bindings. It must not guess links
+from coordinates, treat absent source annotations as successful coverage, or replace
+unresolved observations with claimed semantic certainty.
+
 ## Original-font resolution and PPTX/HTML parity policy
 
 Before rendering, collect every known original font from the profile, literal `fontFace`/`fontFamily`

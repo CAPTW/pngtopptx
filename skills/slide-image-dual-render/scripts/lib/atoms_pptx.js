@@ -63,12 +63,12 @@ function makePptxSurface(pptx, slide, opts={}){
   const textFitSafetyFactor = Number.isFinite(configuredSafety)
     ? Math.min(Math.max(configuredSafety, 0.8), 1)
     : 1;
-  return {
+  return OM.addSourceReferenceSupport({
     _pptx: pptx,
     bgFill(hex){ slide.background = { color: hex }; },
-    img(p, x,y,w,h){ OM.recordImage(p, x,y,w,h); slide.addImage({ path:p, x:ix(x), y:iy(y), w:ix(w), h:iy(h) }); },
+    img(p, x,y,w,h){ OM.recordImage(p, x,y,w,h, OM.sourceRefsFor(this, slideNo)); slide.addImage({ path:p, x:ix(x), y:iy(y), w:ix(w), h:iy(h) }); },
     rrect(x,y,w,h,o={}){
-      OM.record({ type:'panel', x,y,w,h, editable:true, source:'surface.rrect' });
+      OM.record({ type:'panel', x,y,w,h, editable:true, source:'surface.rrect' }, OM.sourceRefsFor(this, slideNo));
       slide.addShape(pptx.ShapeType.roundRect, {
         x:ix(x), y:iy(y), w:ix(w), h:iy(h),
         fill:{ color:o.fill||'0B1B2D', transparency:o.fillTrans!=null?o.fillTrans:0 },
@@ -78,14 +78,14 @@ function makePptxSurface(pptx, slide, opts={}){
       });
     },
     ell(x,y,w,h,o={}){
-      OM.record({ type:'shape', x,y,w,h, editable:true, source:'surface.ell' });
+      OM.record({ type:'shape', x,y,w,h, editable:true, source:'surface.ell' }, OM.sourceRefsFor(this, slideNo));
       slide.addShape(pptx.ShapeType.ellipse, {
         x:ix(x), y:iy(y), w:ix(w), h:iy(h),
         fill:{ color:o.fill||'1F6FB5' }, line:{ color:o.line||o.fill||'1F6FB5', width:linePt(o.lineW) },
       });
     },
     chev(x,y,w,h,o={}){
-      OM.record({ type:'shape', x,y,w,h, editable:true, source:'surface.chev' });
+      OM.record({ type:'shape', x,y,w,h, editable:true, source:'surface.chev' }, OM.sourceRefsFor(this, slideNo));
       slide.addShape(pptx.ShapeType.chevron, {
         x:ix(x), y:iy(y), w:ix(w), h:iy(h),
         fill:{ color:o.fill||'0C1C30', transparency:o.fillTrans!=null?o.fillTrans:0 },
@@ -93,7 +93,7 @@ function makePptxSurface(pptx, slide, opts={}){
       });
     },
     ln(x,y,w,h,o={}){
-      OM.record({ type:'rule', x,y,w,h, editable:true, source:'surface.ln' });
+      OM.record({ type:'rule', x,y,w,h, editable:true, source:'surface.ln' }, OM.sourceRefsFor(this, slideNo));
       const g = safeLineGeom(x,y,w,h);
       slide.addShape(pptx.ShapeType.line, {
         x:ix(g.x), y:iy(g.y), w:ix(g.w), h:iy(g.h),
@@ -118,7 +118,7 @@ function makePptxSurface(pptx, slide, opts={}){
       const mappings = Array.isArray(content)
         ? content.map(r => fontMappingFor(r.fontFace||r.fontFamily||originalFont))
         : [fontMappingFor(originalFont)];
-      OM.recordText(content, x,y,w,h,'surface.txt', { originalFont, resolvedFont, fontMappings:mappings });
+      OM.recordText(content, x,y,w,h,'surface.txt', { originalFont, resolvedFont, fontMappings:mappings }, OM.sourceRefsFor(this, slideNo));
       slide.addText(toRuns(content, o.color||'F2F7FC', originalFont, resolvedSize, sizeScale), {
         x:ix(x), y:iy(y), w:ix(w), h:iy(h),
         fontFace:resolvedFont, fontSize:resolvedSize, color:o.color||'F2F7FC',
@@ -127,7 +127,7 @@ function makePptxSurface(pptx, slide, opts={}){
         margin:o.margin!=null?o.margin:0, wrap:o.wrap!=null?o.wrap:true, shrinkText:!!o.shrink,
       });
     },
-  };
+  }, slideNo);
 }
 
 module.exports = { makePptxSurface, ix, iy, safeLineGeom, linePt };
