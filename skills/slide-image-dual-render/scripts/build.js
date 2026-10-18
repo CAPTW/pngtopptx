@@ -277,6 +277,7 @@ function textFitFingerprint(){
     contract:'slide-image-dual-render.text-fit.v1',
     slidesJs:hashFileIfPresent(SLIDES_PATH),
     atomsHtml:hashFileIfPresent(path.join(SCRIPT_ROOT, 'lib', 'atoms_html.js')),
+    textContent:hashFileIfPresent(path.join(SCRIPT_ROOT, 'lib', 'text_content.js')),
     selectedSlides:order,
     sourcePixelCanvas:{ width:PXW, height:PXH },
     profile:hashFileIfPresent(profilePath),

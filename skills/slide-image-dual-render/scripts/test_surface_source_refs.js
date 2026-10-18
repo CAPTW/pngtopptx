@@ -136,7 +136,8 @@ test('all six official primitives retain explicit metadata and exhaustive backen
 
 test('known emitter projection and HTML input identities differ without losing shared provenance', () => {
   const cases = [
-    {content:'a\r\nb', input:'a\r\nb', projected:'a\n\nb'},
+    // CRLF projects to one logical break; raw input identity still retains CR.
+    {content:'a\r\nb', input:'a\r\nb', projected:'a\nb'},
     {content:[{text:'a', breakLine:true}], input:'a\n', projected:'a'},
   ];
   for (const row of cases) {

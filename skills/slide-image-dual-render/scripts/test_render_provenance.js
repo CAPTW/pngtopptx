@@ -24,11 +24,13 @@ const cases = [
   {name:'plain-unicode-entities-spaces', content:'  Alpha & <β> 😀\tZ  ', expected:'  Alpha & <β> 😀\tZ  '},
   {name:'same-length-text', content:'North', expected:'North'},
   {name:'plain-newlines', content:'a\nb\n', expected:'a\nb\n'},
-  {name:'plain-crlf', content:'a\r\nb', expected:'a\n\nb'},
+  // Corrected emitted preparation: CRLF is one break, not two paragraphs.
+  {name:'plain-crlf', content:'a\r\nb', expected:'a\nb'},
   {name:'rich-formatting', content:[{text:'a',bold:true},{text:'b',italic:true}], expected:'ab'},
   {name:'rich-breakLine', content:[{text:'a',breakLine:true},{text:'b'}], expected:'a\nb'},
   {name:'rich-final-breakLine', content:[{text:'a',breakLine:true}], expected:'a'},
-  {name:'rich-embedded-newline', content:[{text:'a\nb'},{text:'c'}], expected:'a\nb\nc'},
+  // Embedded LF does not add a break after the original run's final segment.
+  {name:'rich-embedded-newline', content:[{text:'a\nb'},{text:'c'}], expected:'a\nbc'},
   {name:'rich-trailing-newline', content:[{text:'a\n'},{text:'b'}], expected:'a\nb'},
   {name:'blank-lines', content:'\n\n', expected:'\n\n'},
   {name:'empty', content:'', expected:''},

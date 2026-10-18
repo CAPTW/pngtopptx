@@ -1,6 +1,7 @@
 // atoms_pptx.js — pptxgenjs surface implementing unified atoms (PX coords).
 const { PXW, PXH, FONT, resolveRenderFont, fontMappingFor } = require('./kit');
 const OM = require('./object_manifest');
+const { prepareTextRuns } = require('./text_content');
 
 const SW = 13.333, SH = 7.5;
 const ix = px => +(px * SW / PXW).toFixed(3);
@@ -61,7 +62,7 @@ function normalizedRunSize(value, fallback){
 // so every generated run must carry the effective font face and size.
 function toRuns(content, baseColor, baseFont, baseSize, sizeScale=1){
   if(Array.isArray(content)){
-    return content.map(r=>({ text:r.text, options:{
+    return prepareTextRuns(content).map(r=>({ text:r.text, options:{
       color:r.color||baseColor, bold:!!r.bold, italic:!!r.italic, breakLine:!!r.breakLine,
       fontFace:resolveRenderFont(r.fontFace||r.fontFamily||baseFont),
       fontSize:(r.fontSize != null || r.sz != null)
@@ -71,12 +72,11 @@ function toRuns(content, baseColor, baseFont, baseSize, sizeScale=1){
   }
   const str = String(content);
   if(str.indexOf('\n')>=0){
-    const parts = str.split('\n');
-    return parts.map((p,i)=>({ text:p, options:{
+    return prepareTextRuns(str).map(r=>({ text:r.text, options:{
       color:baseColor,
       fontFace:resolveRenderFont(baseFont),
       fontSize:normalizedRunSize(null, baseSize),
-      breakLine:i<parts.length-1,
+      breakLine:r.breakLine,
     } }));
   }
   return str;
@@ -86,8 +86,9 @@ function toRuns(content, baseColor, baseFont, baseSize, sizeScale=1){
 // path: decoded a:t content, a:br as LF, and LF between a:p paragraphs. Preserve
 // whitespace and Unicode; do not hash formatting or raw JSON. Consume toRuns'
 // result, not the author input (which is transformed for plain multiline text).
-// Embedded multiline rich runs end a paragraph after every split line; final
-// breakLine does not add an extra paragraph. XML normalizes remaining CR to LF.
+// Preparation splits embedded LF before this projection. The fallback below
+// still models PptxGenJS multiline splitting; final breakLine does not add an
+// extra paragraph. XML normalizes remaining standalone CR to LF.
 // Qualified only against PptxGenJS 4.0.1 (actual runtime evidence is retained).
 // Unknown versions keep authored identity but receive no projected text digest.
 // Emitted-package regression tests guard these library-dependent semantics.

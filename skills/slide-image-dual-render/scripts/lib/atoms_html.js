@@ -2,6 +2,7 @@
 // Produces a <div class="slide"> with absolutely-positioned children.
 const fs = require('fs');
 const OM = require('./object_manifest');
+const { prepareTextRuns } = require('./text_content');
 const { PXW, PXH, FONT_POLICY, resolveRenderFont, fontMappingFor } = require('./kit');
 const { _helpers } = require('./profile');
 
@@ -57,12 +58,12 @@ function cssStack(original){
 
 function runHTML(content, baseColor, baseFont){
   if(Array.isArray(content)){
-    return content.map(r=>{
+    return prepareTextRuns(content).map(r=>{
       const st = `color:#${(r.color||baseColor)};font-family:${cssStack(r.fontFace||r.fontFamily||baseFont)};${r.bold?'font-weight:700;':''}${r.italic?'font-style:italic;':''}`;
-      return `<span style="${st}">${esc(r.text)}</span>${r.breakLine?'<br>':''}`;
+      return `<span style="${st}">${esc(r.text)}</span>${r.breakLine?'\n':''}`;
     }).join('');
   }
-  return esc(String(content)).replace(/\n/g,'<br>');
+  return prepareTextRuns(content).map(r=>esc(r.text)+(r.breakLine?'\n':'')).join('');
 }
 
 function makeHtmlSurface(opts={}){
@@ -133,9 +134,9 @@ function makeHtmlSurface(opts={}){
       const ai = o.valign==='top'?'flex-start':o.valign==='bottom'?'flex-end':'center';
       const jc = o.align==='center'?'center':o.align==='right'?'flex-end':'flex-start';
       const ta = o.align||'left';
-      const ws = (o.wrap===false || o.shrink) ? 'white-space:nowrap;' : '';
+      const ws = (o.wrap===false || o.shrink) ? 'white-space:pre;' : 'white-space:pre-wrap;';
       const ls = o.cs!=null ? `letter-spacing:${o.cs}px;` : '';
-      const innerWs = o.shrink ? 'white-space:nowrap;' : '';
+      const innerWs = o.shrink ? 'white-space:pre;' : '';
       const inner = `<div style="width:100%;text-align:${ta};line-height:${o.lh!=null?o.lh:1.0};${ls}${innerWs}">${runHTML(content, o.color||'F2F7FC', originalFont)}</div>`;
       const sa = o.shrink ? ' data-shrink="1"' : '';
       parts.push(`<div${sa} data-text-fit-id="${textFitId}" data-requested-font-size-pt="${Number(o.sz||12)}" data-original-font="${esc(originalFont)}" data-resolved-font="${esc(resolvedFont)}" style="position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;display:flex;align-items:${ai};justify-content:${jc};overflow:hidden;font-family:${cssStack(originalFont)};font-size:${fpx.toFixed(1)}px;color:#${o.color||'F2F7FC'};${o.bold?'font-weight:700;':''}${o.italic?'font-style:italic;':''}${ws}box-sizing:border-box;">${inner}</div>`);
