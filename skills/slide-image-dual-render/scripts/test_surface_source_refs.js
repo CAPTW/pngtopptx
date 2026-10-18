@@ -66,8 +66,25 @@ const TEXT_SHARED_FIELDS = [...BASE_FIELDS, 'identityStage', 'textInputSha256',
 const TEXT_BACKEND_FIELDS = ['textContentSha256', 'textContentEmitterVersion',
   'textContentIdentityError', 'textContentSerialization', 'representation', 'contentEditable'];
 const select = (row, keys) => Object.fromEntries(keys.map(key => [key, row[key]]));
+function assertGeometryContract(row, kind, emitterVersion) {
+  if(kind === 'html') {assert(!Object.hasOwn(row,'emitterGeometry'));return;}
+  const e=row.emitterGeometry;
+  assert.deepEqual(Object.keys(e).sort(),['schemaVersion','emitterVersion','units','status','reason','sourceNormalization','transform'].sort());
+  assert.equal(e.schemaVersion,'slide-image-dual-render.emitter-geometry.v1');
+  assert.equal(e.emitterVersion,emitterVersion || null);assert.equal(e.units,'EMU');
+  assert.equal(e.sourceNormalization,row.source === 'surface.ln' ? 'safe-line-geom-v1' : 'none');
+  if(emitterVersion !== '4.0.1') {
+    assert.equal(e.status,'UNSUPPORTED');assert.equal(e.reason,'UNVERIFIED_PPTXGENJS_VERSION');assert.equal(e.transform,null);
+  } else {
+    // This existing known-version control is a finite positive text box.
+    assert.equal(row.source,'surface.txt');assert.equal(e.status,'PROJECTED');assert.equal(e.reason,null);
+    const emu=(value,extent,pixels)=>Math.round(+(value*extent/pixels).toFixed(3)*914400);
+    assert.deepEqual(e.transform,{x:emu(row.x,13.333,720),y:emu(row.y,7.5,405),cx:emu(row.w,13.333,720),cy:emu(row.h,7.5,405),flipH:false,flipV:false,rotation:0});
+  }
+}
 function assertTextContract(row, kind, input, projected, emitterVersion) {
-  assert.deepEqual(Object.keys(row).sort(), [...TEXT_SHARED_FIELDS, ...TEXT_BACKEND_FIELDS].sort());
+  assert.deepEqual(Object.keys(row).sort(), [...TEXT_SHARED_FIELDS, ...TEXT_BACKEND_FIELDS,...(kind === 'pptx' ? ['emitterGeometry'] : [])].sort());
+  assertGeometryContract(row,kind,emitterVersion);
   assert.equal(row.identityStage, 'surface-call');
   assert.equal(row.textInputSha256, hash(input));
   assert.equal(row.textInputIdentityError, null);
@@ -97,8 +114,12 @@ test('all six official primitives retain explicit metadata and exhaustive backen
         assertTextContract(row, kind, 'Invented heading', 'Invented heading', undefined);
         if (expected) assert.deepEqual(select(row, TEXT_SHARED_FIELDS), select(expected[index], TEXT_SHARED_FIELDS));
       } else if (expected) {
-        // Shapes, lines and image records still have identical complete schemas.
-        assert.deepEqual(row, expected[index]);
+        // Only the named, separately checked PPTX projection is backend-local.
+        // Every original shared field remains exhaustively compared.
+        assertGeometryContract(row,kind,undefined);
+        assertGeometryContract(expected[index],'pptx',undefined);
+        const {emitterGeometry,...shared}=expected[index];
+        assert.deepEqual(row, shared);
       }
     }
     const {objects:unused, ...summary} = OM.toJSON().slides['2'];

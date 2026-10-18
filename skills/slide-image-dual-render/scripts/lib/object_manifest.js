@@ -203,6 +203,9 @@ function normalizeObject(obj) {
   out.editable = out.editable !== false;
   out.source = out.source || 'surface';
   if (Object.prototype.hasOwnProperty.call(out, 'sourceRefs')) out.sourceRefs = normalizeSourceRefs(out.sourceRefs, out.sourceRefs && out.sourceRefs.slide);
+  // Producer-owned evidence is a detached immutable value. Neither retained
+  // drawing arguments nor a caller's manifest view can rewrite prior records.
+  if (Object.prototype.hasOwnProperty.call(out, 'emitterGeometry')) out.emitterGeometry = freezeTree(JSON.parse(JSON.stringify(out.emitterGeometry)));
   return out;
 }
 
@@ -255,10 +258,11 @@ function recordText(content, x, y, w, h, source, fontMeta, sourceRefs) {
     originalFont:meta.originalFont || null,
     resolvedFont:meta.resolvedFont || null,
     fontMappings,
+    ...(meta.emitterGeometry === undefined ? {} : {emitterGeometry:meta.emitterGeometry}),
   }, sourceRefs);
 }
 
-function recordImage(file, x, y, w, h, sourceRefs) {
+function recordImage(file, x, y, w, h, sourceRefs, emitterGeometry) {
   if (!state.enabled || !state.currentSlide) return;
   const meta = classifyImage(file);
   // PptxGenJS may read this path later, during write. This digest is the observed
@@ -276,6 +280,7 @@ function recordImage(file, x, y, w, h, sourceRefs) {
     // Preserve legacy category/count semantics, but never assert that image
     // pixels (including raster icons) are editable native drawing content.
     contentEditable:false,
+    ...(emitterGeometry === undefined ? {} : {emitterGeometry}),
   }, sourceRefs);
 }
 
