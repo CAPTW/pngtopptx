@@ -156,6 +156,7 @@ function buildFontIndex(){
   if(FONT_INDEX_CACHE) return FONT_INDEX_CACHE;
   const files = [];
   const searchedLocations = [];
+  const descendantScans = [];
   for(const location of fontSearchLocations()){
     const record = Object.assign({}, location, { exists:false, fileCount:0 });
     let entries = [];
@@ -171,6 +172,37 @@ function buildFontIndex(){
     }
     record.fileCount = files.filter(file => file.path.toLowerCase().startsWith(location.path.toLowerCase())).length;
     searchedLocations.push(record);
+    descendantScans.push({ location, record, entries });
+  }
+  // Preserve the complete legacy top-level ordering before adding descendants.
+  // Walk only within each configured root; never follow directory/file symlinks.
+  for(const { location, record, entries } of descendantScans){
+    const pending = entries.filter(entry => entry.isDirectory()).map(entry => path.join(location.path, entry.name));
+    if(!pending.length) continue;
+    let realRoot;
+    try { realRoot = fs.realpathSync(location.path); }
+    catch(err){ record.error = record.error || err.code || err.message; continue; }
+    const visited = new Set([realRoot]);
+    for(let index = 0; index < pending.length; index += 1){
+      const directory = pending[index];
+      let children;
+      try {
+        if(!fs.lstatSync(directory).isDirectory()) continue;
+        const realDirectory = fs.realpathSync(directory);
+        const relative = path.relative(realRoot, realDirectory);
+        if(relative === '..' || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative) || visited.has(realDirectory)) continue;
+        visited.add(realDirectory);
+        children = fs.readdirSync(realDirectory, { withFileTypes:true });
+      } catch(err){ record.error = record.error || err.code || err.message; continue; }
+      for(const entry of children){
+        const entryPath = path.join(directory, entry.name);
+        if(entry.isDirectory()) pending.push(entryPath);
+        else if(entry.isFile() && /\.(?:ttf|ttc|otf|woff2?)$/i.test(entry.name)){
+          files.push({ name:entry.name, path:entryPath, scope:location.scope, source:location.source });
+          record.fileCount += 1;
+        }
+      }
+    }
   }
   FONT_INDEX_CACHE = {
     builtAt:new Date().toISOString(),
