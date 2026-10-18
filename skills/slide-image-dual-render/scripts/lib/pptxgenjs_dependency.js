@@ -165,9 +165,28 @@ function verifyPptxgenjsDependencyReceipts(projectRoot, buildTracePath, nativeMa
   return expected;
 }
 
+// The pinned CJS has exactly these three audited literal built-in imports.
+// This is an exact-source contract, not a general JS parser or per-import
+// callback enforcement. Built-ins have no package-relative resolution drift.
+// Custom vm callbacks require an experimental Node flag; the standard loader
+// constant handles normal default/named built-in exports without new flags.
+function builtinImportOptions(bytes) {
+  const source=bytes.toString('utf8');
+  const sites=source.match(/\bimport\s*\(/g) || [];
+  const imports=[...source.matchAll(/\bimport\s*\(\s*(['"])([^'"]+)\1\s*\)/g)].map(m=>m[2]);
+  if(sites.length!==3 || JSON.stringify(imports)!==JSON.stringify(['node:fs','node:https','node:fs'])) {
+    fail('verified CJS dynamic import sites differ from the audited built-in-only contract');
+  }
+  const loader=vm.constants && vm.constants.USE_MAIN_CONTEXT_DEFAULT_LOADER;
+  if(typeof loader!=='symbol')fail('Node standard dynamic-import loader is unavailable');
+  return {importModuleDynamically:loader};
+}
+
 function loadPptxgenjsDependency(projectRoot) {
   const input=inspectInputs(projectRoot); if(!input) return null;
   const d=input.descriptor;
+  // Exact result hash was checked by inspectInputs before this source contract.
+  const importOptions=builtinImportOptions(input.derived);
   // Verify existing members before publishing a missing member.
   for(const [file,expected] of [[d.cacheEntryPath,RESULT_SHA],[d.cacheLicensePath,LICENSE_SHA]]) {
     if(statMaybe(file))checkHash(readRegular(file,MAX_CJS_BYTES,d.projectRoot),expected,'existing cache');
@@ -177,7 +196,7 @@ function loadPptxgenjsDependency(projectRoot) {
   // Compile this exact already-read/hashed buffer, never a later pathname read.
   checkHash(bytes,RESULT_SHA,'execution buffer');
   const mod={exports:{}};
-  const run=vm.compileFunction(bytes.toString('utf8'),['exports','require','module','__filename','__dirname'],{filename:d.cacheEntryPath});
+  const run=vm.compileFunction(bytes.toString('utf8'),['exports','require','module','__filename','__dirname'],{filename:d.cacheEntryPath,...importOptions});
   run.call(mod.exports,mod.exports,createRequire(d.originalEntryPath),mod,d.cacheEntryPath,path.dirname(d.cacheEntryPath));
   if(typeof mod.exports!=='function')fail('selected CJS did not export a constructor');
   const selection=Object.freeze({PptxGenJS:mod.exports,descriptor:Object.freeze(d)});
