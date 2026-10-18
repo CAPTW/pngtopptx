@@ -2,6 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 const state = {
   enabled: false,
@@ -213,8 +214,26 @@ function record(obj, sourceRefs) {
   slide.objects.push(normalized);
 }
 
+function sha256(value) {
+  return crypto.createHash('sha256').update(value).digest('hex');
+}
+
+// Input identity only. A backend can supply its exact logical-text serialization
+// through fontMeta; this default does not claim that native PPTX text was emitted.
+function surfaceText(content) {
+  if (Array.isArray(content)) return content.map(run =>
+    String(run && run.text != null ? run.text : '') + (run && run.breakLine ? '\n' : '')
+  ).join('');
+  return String(content);
+}
+
 function recordText(content, x, y, w, h, source, fontMeta, sourceRefs) {
+  if (!state.enabled || !state.currentSlide) return;
   const meta = fontMeta || {};
+  const inputText = surfaceText(content);
+  // UTF-8 cannot preserve an unpaired UTF-16 surrogate. Never silently hash its
+  // replacement character as though it were the author's exact input.
+  const textInputIdentityError = /[\uD800-\uDFFF]/u.test(inputText) ? 'UNSUPPORTED_UNICODE_TEXT' : null;
   const fontMappings = Array.isArray(meta.fontMappings)
     ? meta.fontMappings
       .filter(mapping => mapping && mapping.original && mapping.resolved)
@@ -223,6 +242,16 @@ function recordText(content, x, y, w, h, source, fontMeta, sourceRefs) {
   record({
     type: 'text', x, y, w, h,
     textLength: textLength(content), editable: true, source: source || 'surface.txt',
+    identityStage:'surface-call',
+    textInputSha256:textInputIdentityError ? null : sha256(inputText),
+    textInputIdentityError,
+    textInputSerialization:'surface-input-text-v1',
+    textContentSha256:(meta.textContentIdentityError || textInputIdentityError) ? null : sha256(meta.textContent != null ? meta.textContent : inputText),
+    textContentEmitterVersion:meta.textContentEmitterVersion || null,
+    textContentIdentityError:meta.textContentIdentityError || textInputIdentityError,
+    textContentSerialization:meta.textContentSerialization || 'surface-input-text-v1',
+    representation:meta.representation || 'surface-text',
+    contentEditable:meta.representation === 'native-text',
     originalFont:meta.originalFont || null,
     resolvedFont:meta.resolvedFont || null,
     fontMappings,
@@ -230,8 +259,24 @@ function recordText(content, x, y, w, h, source, fontMeta, sourceRefs) {
 }
 
 function recordImage(file, x, y, w, h, sourceRefs) {
+  if (!state.enabled || !state.currentSlide) return;
   const meta = classifyImage(file);
-  record({ type: meta.type, x, y, w, h, textLength: 0, editable: meta.editable, source: meta.source }, sourceRefs);
+  // PptxGenJS may read this path later, during write. This digest is the observed
+  // input at the surface call, never proof of package contents. Do not cache by
+  // pathname: two calls may observe different bytes at the same filename.
+  let imageFileSha256 = null;
+  let imageIdentityError = null;
+  try { imageFileSha256 = sha256(fs.readFileSync(file)); }
+  catch (err) { imageIdentityError = err.code || 'IMAGE_READ_FAILED'; }
+  record({
+    type: meta.type, x, y, w, h, textLength: 0, editable: meta.editable, source: meta.source,
+    identityStage:'surface-call', imageSourcePath:String(file), imageFileSha256,
+    imageIdentityError,
+    representation:/\.(?:png|jpe?g|gif|bmp|webp)$/i.test(String(file)) ? 'raster-image' : 'image-asset',
+    // Preserve legacy category/count semantics, but never assert that image
+    // pixels (including raster icons) are editable native drawing content.
+    contentEditable:false,
+  }, sourceRefs);
 }
 
 function countsFor(objects) {

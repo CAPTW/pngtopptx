@@ -5,6 +5,8 @@
 // and explicit unit-test fit inputs. No build, browser, PNG render or PPTX file.
 const assert = require('node:assert/strict');
 const path = require('node:path');
+const crypto = require('node:crypto');
+const hash = value => crypto.createHash('sha256').update(value).digest('hex');
 const { test } = require('node:test');
 process.env.DECK_PXW = '720';
 process.env.DECK_PXH = '405';
@@ -39,6 +41,7 @@ function setup(kind = 'pptx', options = {}) {
     addImage(...args) { calls.push({method:'image', args}); },
   };
   const pptx = {ShapeType:{roundRect:'roundRect', ellipse:'ellipse', chevron:'chevron', line:'line'}};
+  if (Object.hasOwn(options, 'emitterVersion')) pptx.version = options.emitterVersion;
   const surface = kind === 'pptx' ? makePptxSurface(pptx, slide, {
     slideNo, textFit:{[`${slideNo}:1`]:{fontSizePt:9, shrinkApplied:true}}, textFitSafetyFactor:0.94,
   }) : makeHtmlSurface({slideNo, textOnly:true});
@@ -54,21 +57,79 @@ function draw(surface) {
   surface.img('not-read-in-text-only-unit-test.png', 260, 20, 50, 50);
 }
 
-test('all six official primitives retain explicit metadata in both backends', () => {
-  let expected;
+// PR1 distinguishes authored surface input from version-qualified PPTX paragraph
+// projection. Compare every shared field by name; assert all backend-specific
+// fields separately. Unknown fields fail the exhaustive key check, never vanish.
+const BASE_FIELDS = ['type', 'x', 'y', 'w', 'h', 'textLength', 'editable', 'source', 'sourceRefs'];
+const TEXT_SHARED_FIELDS = [...BASE_FIELDS, 'identityStage', 'textInputSha256',
+  'textInputIdentityError', 'textInputSerialization', 'originalFont', 'resolvedFont', 'fontMappings'];
+const TEXT_BACKEND_FIELDS = ['textContentSha256', 'textContentEmitterVersion',
+  'textContentIdentityError', 'textContentSerialization', 'representation', 'contentEditable'];
+const select = (row, keys) => Object.fromEntries(keys.map(key => [key, row[key]]));
+function assertTextContract(row, kind, input, projected, emitterVersion) {
+  assert.deepEqual(Object.keys(row).sort(), [...TEXT_SHARED_FIELDS, ...TEXT_BACKEND_FIELDS].sort());
+  assert.equal(row.identityStage, 'surface-call');
+  assert.equal(row.textInputSha256, hash(input));
+  assert.equal(row.textInputIdentityError, null);
+  assert.equal(row.textInputSerialization, 'surface-input-text-v1');
+  const qualified = emitterVersion === '4.0.1';
+  assert.deepEqual(select(row, TEXT_BACKEND_FIELDS), kind === 'pptx' ? {
+    textContentSha256:qualified ? hash(projected) : null,
+    textContentEmitterVersion:emitterVersion || null,
+    textContentIdentityError:qualified ? null : 'UNVERIFIED_PPTXGENJS_VERSION',
+    textContentSerialization:'pptxgenjs-paragraph-text-v1', representation:'native-text', contentEditable:true,
+  } : {
+    textContentSha256:hash(input), textContentEmitterVersion:null, textContentIdentityError:null,
+    textContentSerialization:'surface-input-text-v1', representation:'surface-text', contentEditable:false,
+  });
+}
+
+test('all six official primitives retain explicit metadata and exhaustive backend contracts', () => {
+  let expected, expectedSummary;
   for (const kind of ['pptx', 'html']) {
     const run = setup(kind); const tag = metadata();
     draw(run.surface.withSourceRefs(tag));
     const objects = run.objects();
     assert.equal(objects.length, 6);
     assert.deepEqual(objects.map(obj => obj.sourceRefs), Array(6).fill(tag));
-    if (expected) assert.deepEqual(objects, expected);
-    expected = objects;
+    for (const [index, row] of objects.entries()) {
+      if (row.type === 'text') {
+        assertTextContract(row, kind, 'Invented heading', 'Invented heading', undefined);
+        if (expected) assert.deepEqual(select(row, TEXT_SHARED_FIELDS), select(expected[index], TEXT_SHARED_FIELDS));
+      } else if (expected) {
+        // Shapes, lines and image records still have identical complete schemas.
+        assert.deepEqual(row, expected[index]);
+      }
+    }
+    const {objects:unused, ...summary} = OM.toJSON().slides['2'];
+    if (expectedSummary) assert.deepEqual(summary, expectedSummary);
+    expected = objects; expectedSummary = summary;
     if (kind === 'pptx') {
       assert.equal(run.calls.length, 6);
       assert(!JSON.stringify(run.calls).includes('sourceRefs'));
       assert(!JSON.stringify(run.calls).includes('jobContentHash'));
       assert.equal(run.calls.find(call => call.method === 'text').args[1].fontSize, 8.46);
+    }
+  }
+});
+
+test('known emitter projection and HTML input identities differ without losing shared provenance', () => {
+  const cases = [
+    {content:'a\r\nb', input:'a\r\nb', projected:'a\n\nb'},
+    {content:[{text:'a', breakLine:true}], input:'a\n', projected:'a'},
+  ];
+  for (const row of cases) {
+    let expected;
+    for (const kind of ['pptx', 'html']) {
+      const run = setup(kind, {emitterVersion:'4.0.1'});
+      run.surface.withSourceRefs(metadata()).txt(row.content, 1, 2, 30, 10);
+      const actual = run.objects()[0];
+      assertTextContract(actual, kind, row.input, row.projected, '4.0.1');
+      if (expected) {
+        assert.deepEqual(select(actual, TEXT_SHARED_FIELDS), select(expected, TEXT_SHARED_FIELDS));
+        assert.notEqual(actual.textContentSha256, expected.textContentSha256);
+      }
+      expected = actual;
     }
   }
 });
