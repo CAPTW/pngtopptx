@@ -81,8 +81,8 @@ test('signed diagonal and requested missing flip semantics remain unsupported',(
   for(const row of run.rows()) {
     assert.equal(row.emitterGeometry.status,'UNSUPPORTED');
     assert.match(row.emitterGeometry.reason,/LINE_(DIRECTION|TRANSFORM)/);
-    assert.equal(row.emitterGeometry.transform.flipH,false);
-    assert.equal(row.emitterGeometry.transform.flipV,false);
+    assert.equal(row.emitterGeometry.transform.flipH,row.w < 0);
+    assert.equal(row.emitterGeometry.transform.flipV,row.h < 0);
   }
 });
 test('unknown serializer and ambiguous/degenerate numeric geometry are unqualified',()=>{

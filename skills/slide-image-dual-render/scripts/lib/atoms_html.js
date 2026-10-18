@@ -114,7 +114,11 @@ function makeHtmlSurface(opts={}){
       if(g.orientation==='horizontal'){ parts.push(`<div style="position:absolute;left:${g.x}px;top:${g.y}px;width:${g.w}px;height:0;border-top:${bw}px ${style} ${col};"></div>`); }
       else if(g.orientation==='vertical'){ parts.push(`<div style="position:absolute;left:${g.x}px;top:${g.y}px;height:${g.h}px;width:0;border-left:${bw}px ${style} ${col};"></div>`); }
       else { // diagonal fallback: thin rotated bar (rare)
-        parts.push(`<div style="position:absolute;left:${g.x}px;top:${g.y}px;width:${Math.hypot(g.w,g.h)}px;height:0;border-top:${bw}px ${style} ${col};transform-origin:0 0;transform:rotate(${Math.atan2(g.h,g.w)}rad);"></div>`);
+        // Preserve the normalized/minimum-size box, but start at its signed
+        // endpoint corner instead of always drawing from top-left to bottom-right.
+        const dx = Number(w) < 0 ? -g.w : g.w, dy = Number(h) < 0 ? -g.h : g.h;
+        const sx = g.x + (dx < 0 ? g.w : 0), sy = g.y + (dy < 0 ? g.h : 0);
+        parts.push(`<div style="position:absolute;left:${sx}px;top:${sy}px;width:${Math.hypot(g.w,g.h)}px;height:0;border-top:${bw}px ${style} ${col};transform-origin:0 0;transform:rotate(${Math.atan2(dy,dx)}rad);"></div>`);
       }
     },
     txt(content, x,y,w,h, o={}){

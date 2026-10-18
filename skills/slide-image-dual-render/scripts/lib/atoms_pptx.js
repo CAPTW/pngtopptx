@@ -29,7 +29,7 @@ function safeLineGeom(x,y,w,h){
 // diagnostic source bbox. PptxGenJS 4.0.1 treats values >=100 as EMU rather than
 // inches; degenerate/defaulted geometry is outside this bounded projection.
 // Only explicitly tagged calls receive evidence, preserving untagged records.
-function emitterGeometry(pptx, geometry, sourceRefs, normalization='none', lineIssue=null){
+function emitterGeometry(pptx, geometry, sourceRefs, normalization='none', lineIssue=null, lineFlips={}){
   if(sourceRefs === undefined) return undefined;
   const result = {
     schemaVersion:'slide-image-dual-render.emitter-geometry.v1',
@@ -43,7 +43,7 @@ function emitterGeometry(pptx, geometry, sourceRefs, normalization='none', lineI
     const [x,y,cx,cy] = ['x','y','w','h'].map(key => Math.round(geometry[key] * 914400));
     if(![x,y,cx,cy].every(Number.isSafeInteger) || cx <= 0 || cy <= 0) result.reason = 'UNSUPPORTED_NUMERIC_GEOMETRY';
     else {
-      result.transform = {x,y,cx,cy,flipH:false,flipV:false,rotation:0};
+      result.transform = {x,y,cx,cy,flipH:lineFlips.flipH === true,flipV:lineFlips.flipV === true,rotation:0};
       result.reason = lineIssue;
       result.status = lineIssue ? 'UNSUPPORTED' : 'PROJECTED';
     }
@@ -162,15 +162,20 @@ function makePptxSurface(pptx, slide, opts={}){
       const g = safeLineGeom(x,y,w,h);
       const geometry = {x:ix(g.x), y:iy(g.y), w:ix(g.w), h:iy(g.h)};
       const refs = OM.sourceRefsFor(this, slideNo);
-      // Existing safeLineGeom does not carry endpoint direction/flip flags.
-      // Retain the actual normalized transform but never qualify a signed
-      // diagonal or requested transform as preserving that missing semantics.
+      // A positive bounding box alone loses diagonal endpoint orientation.
+      // Keep existing axis normalization and derive only internal sign flips.
+      const sw = Number(w)||0, sh = Number(h)||0;
+      const diagonal = sw !== 0 && sh !== 0;
+      const direction = { ...(diagonal && sw < 0 ? {flipH:true} : {}),
+        ...(diagonal && sh < 0 ? {flipV:true} : {}) };
+      // Record the actual flips, but keep this new signed geometry outside the
+      // existing qualified consumer profile until that profile is reviewed.
       const lineIssue = refs === undefined ? null : (o.flipH || o.flipV || o.rotate) ? 'UNSUPPORTED_LINE_TRANSFORM'
         : ((w < 0 || h < 0) && Number(w) !== 0 && Number(h) !== 0) ? 'UNSUPPORTED_LINE_DIRECTION' : null;
       OM.record({ type:'rule', x,y,w,h, editable:true, source:'surface.ln',
-        ...(refs === undefined ? {} : {emitterGeometry:emitterGeometry(pptx, geometry, refs, 'safe-line-geom-v1', lineIssue)}) }, refs);
+        ...(refs === undefined ? {} : {emitterGeometry:emitterGeometry(pptx, geometry, refs, 'safe-line-geom-v1', lineIssue, direction)}) }, refs);
       slide.addShape(pptx.ShapeType.line, {
-        ...geometry,
+        ...geometry, ...direction,
         line:{ color:o.color||'2A4A6E', width:linePt(o.width), dashType:o.dash||'solid' },
       });
     },
