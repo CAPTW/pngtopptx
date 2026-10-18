@@ -10,13 +10,11 @@ const SW = 13.333;
 const PT2PX = PXW / SW / 72;
 const FONT_STACK = FONT_POLICY.htmlCssFamily || `${FONT_POLICY.resolved}, sans-serif`;
 const EPS = 0.0001;
-const imgCache = new Map();
 function dataURI(p){
-  if(imgCache.has(p)) return imgCache.get(p);
+  // Read each call: regenerated assets may reuse the same pathname.
   const b = fs.readFileSync(p);
   const ext = p.toLowerCase().endsWith('.jpg')||p.toLowerCase().endsWith('.jpeg') ? 'jpeg' : 'png';
   const uri = `data:image/${ext};base64,${b.toString('base64')}`;
-  imgCache.set(p, uri);
   return uri;
 }
 const esc = t => String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -67,6 +65,12 @@ function runHTML(content, baseColor, baseFont){
 }
 
 function makeHtmlSurface(opts={}){
+  // Opt-in PNG/JPEG snapshots cost one embedded media entry per call.
+  // Omitted/false retains legacy reads and PPTX pathname deduplication.
+  const snapshotImages = opts.snapshotImages;
+  if ('snapshotImages' in opts && typeof snapshotImages !== 'boolean') {
+    throw new TypeError('snapshotImages must be a boolean when provided');
+  }
   const parts = [];
   let bgColor = '020812';
   let textIndex = 0;
@@ -77,9 +81,12 @@ function makeHtmlSurface(opts={}){
     _bg(){ return bgColor; },
     bgFill(hex){ bgColor = hex; },
     img(p, x,y,w,h){
-      OM.recordImage(p, x,y,w,h, OM.sourceRefsFor(this, slideNo));
-      if(textOnly) return;
-      parts.push(`<img src="${dataURI(p)}" style="position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;object-fit:fill;">`);
+      const refs = OM.sourceRefsFor(this, slideNo);
+      if(textOnly){ OM.recordImage(p, x,y,w,h, refs); return; }
+      const snapshot = snapshotImages === true ? OM.captureImageSnapshot(p) : undefined;
+      OM.recordImage(p, x,y,w,h, refs, undefined, snapshot);
+      const uri = snapshot === undefined ? dataURI(p) : OM.imageSnapshotData(snapshot, 'html');
+      parts.push(`<img src="${uri}" style="position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;object-fit:fill;">`);
     },
     rrect(x,y,w,h,o={}){
       OM.record({ type:'panel', x,y,w,h, editable:true, source:'surface.rrect' }, OM.sourceRefsFor(this, slideNo));

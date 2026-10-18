@@ -262,16 +262,52 @@ function recordText(content, x, y, w, h, source, fontMeta, sourceRefs) {
   }, sourceRefs);
 }
 
-function recordImage(file, x, y, w, h, sourceRefs, emitterGeometry) {
+// One per-call snapshot for supported PNG/JPEG atoms. Opaque frozen handles
+// retain immutable strings, never caller-visible mutable Buffers. This is not an
+// OS-atomic file snapshot: it binds the bytes returned by one synchronous read.
+const imageSnapshots = new WeakMap();
+function captureImageSnapshot(file) {
+  if (typeof file !== 'string' || !/\.(?:png|jpe?g)$/i.test(file)) return undefined;
+  const kind = path.extname(file).slice(1).toLowerCase();
+  const handle = Object.freeze({});
+  let digest = null, error = null, htmlData = null, pptxData = null;
+  try {
+    const bytes = fs.readFileSync(file);
+    digest = sha256(bytes);
+    const base64 = bytes.toString('base64');
+    htmlData = `data:image/${kind === 'png' ? 'png' : 'jpeg'};base64,${base64}`;
+    // Preserve the existing PptxGenJS extension-derived jpg/jpeg media subtype.
+    pptxData = `data:image/${kind};base64,${base64}`;
+  } catch (err) { error = err; }
+  imageSnapshots.set(handle, Object.freeze({file, digest, error,
+    errorCode:error ? error.code || 'IMAGE_READ_FAILED' : null, htmlData, pptxData}));
+  return handle;
+}
+function imageSnapshotData(handle, backend) {
+  const snapshot = imageSnapshots.get(handle);
+  if (!snapshot) throw new Error('image snapshot handle is invalid');
+  if (backend !== 'html' && backend !== 'pptx') throw new Error('image snapshot backend is unsupported');
+  if (snapshot.error) throw snapshot.error;
+  return backend === 'html' ? snapshot.htmlData : snapshot.pptxData;
+}
+
+function recordImage(file, x, y, w, h, sourceRefs, emitterGeometry, imageSnapshot) {
   if (!state.enabled || !state.currentSlide) return;
   const meta = classifyImage(file);
-  // PptxGenJS may read this path later, during write. This digest is the observed
-  // input at the surface call, never proof of package contents. Do not cache by
-  // pathname: two calls may observe different bytes at the same filename.
+  // Snapshot-aware atoms bind emission and identity to the same captured bytes.
+  // Legacy direct calls and other formats retain their observed-path behavior.
+  // Neither path is itself proof of serialized package contents.
   let imageFileSha256 = null;
   let imageIdentityError = null;
-  try { imageFileSha256 = sha256(fs.readFileSync(file)); }
-  catch (err) { imageIdentityError = err.code || 'IMAGE_READ_FAILED'; }
+  if (imageSnapshot !== undefined) {
+    const snapshot = imageSnapshots.get(imageSnapshot);
+    if (!snapshot || snapshot.file !== file) throw new Error('image snapshot path/handle mismatch');
+    imageFileSha256 = snapshot.digest;
+    imageIdentityError = snapshot.errorCode;
+  } else {
+    try { imageFileSha256 = sha256(fs.readFileSync(file)); }
+    catch (err) { imageIdentityError = err.code || 'IMAGE_READ_FAILED'; }
+  }
   record({
     type: meta.type, x, y, w, h, textLength: 0, editable: meta.editable, source: meta.source,
     identityStage:'surface-call', imageSourcePath:String(file), imageFileSha256,
@@ -342,6 +378,8 @@ module.exports = {
   record,
   recordText,
   recordImage,
+  captureImageSnapshot,
+  imageSnapshotData,
   writeNativeManifest,
   toJSON,
 };

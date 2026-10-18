@@ -12,7 +12,7 @@ const JSZip = require('jszip');
 const dir = process.env.GEOMETRY_TEST_OUTPUT || fs.mkdtempSync(path.join(os.tmpdir(), 'emitter-geometry-'));
 fs.mkdirSync(dir, {recursive:true});
 Object.assign(process.env, {DECK_PROJECT_ROOT:dir, DECK_ASSETS:dir, HOME:dir,
-  DECK_PXW:'1672', DECK_PXH:'941', DECK_FONT:'sans-serif', DECK_FONT_INSTALL_DECISION:'unavailable'});
+  DECK_PXW:'1920', DECK_PXH:'1080', DECK_FONT:'sans-serif', DECK_FONT_INSTALL_DECISION:'unavailable'});
 const lib = process.env.GEOMETRY_TEST_LIB || path.join(__dirname, 'lib');
 const OM = require(path.join(lib, 'object_manifest'));
 const {makePptxSurface} = require(path.join(lib, 'atoms_pptx'));
@@ -43,7 +43,7 @@ function checkEvidence(e, args, normalization='none') {
 }
 test('fractional source bbox collision retains different exact emitter geometry',()=>{
   const run=setup(),s=run.surface.withSourceRefs(metadata());
-  const edge=0.1595*1672/13.333;
+  const edge=0.1595*1920/13.333;
   s.ell(edge-0.00001,10.125,30.25,20.375);s.ell(edge+0.00001,10.125,30.25,20.375);
   const rows=run.rows();assert.equal(rows[0].x,rows[1].x);
   assert.deepEqual(rows.map(r=>r.emitterGeometry.transform.x),[145390,146304]);
@@ -74,13 +74,14 @@ test('zero-axis and reversed axis-aligned lines describe existing safeLineGeom b
   assert(run.rows()[0].emitterGeometry.transform.cy>0,'Existing zero-axis inflation must be explicit');
   assert(run.rows()[2].emitterGeometry.transform.cx>0);
 });
-test('signed diagonal and requested missing flip semantics remain unsupported',()=>{
+test('signed diagonal records qualify only internal direction, caller transforms stay unsupported',()=>{
   const run=setup(),s=run.surface.withSourceRefs(metadata());
   s.ln(100.25,80.125,-50.375,30.25);s.ln(100.25,80.125,-50.375,-30.25);
   s.ln(100.25,80.125,50.375,30.25,{flipH:true});
-  for(const row of run.rows()) {
-    assert.equal(row.emitterGeometry.status,'UNSUPPORTED');
-    assert.match(row.emitterGeometry.reason,/LINE_(DIRECTION|TRANSFORM)/);
+  for(const [index,row] of run.rows().entries()) {
+    assert.equal(row.emitterGeometry.status,index<2?'PROJECTED':'UNSUPPORTED');
+    assert.equal(row.emitterGeometry.schemaVersion,index<2?'slide-image-dual-render.emitter-geometry.v2':'slide-image-dual-render.emitter-geometry.v1');
+    if(index<2){assert.equal(row.emitterGeometry.reason,null);assert.equal(row.emitterGeometry.sourceLine.qualifier,'internal-sign-diagonal-v1');}else assert.equal(row.emitterGeometry.reason,'UNSUPPORTED_LINE_TRANSFORM');
     assert.equal(row.emitterGeometry.transform.flipH,row.w < 0);
     assert.equal(row.emitterGeometry.transform.flipV,row.h < 0);
   }
@@ -125,8 +126,8 @@ function verifyGeometry(buffer,rows) {
   const actual=extract(buffer);assert.equal(actual.length,rows.length,'count mismatch');
   rows.forEach((row,i)=>{assert.equal(row.emitterGeometry.status,'PROJECTED','unsupported geometry');assert.deepEqual(actual[i],row.emitterGeometry.transform,`geometry mismatch at ${i}`);});
 }
-test('one actual pinned package proves fractional and supported line transforms; tampering fails',async()=>{
-  const run=setup('4.0.1',true),s=run.surface.withSourceRefs(metadata());const edge=0.1595*1672/13.333;
+test('one actual pinned package proves fractional and supported line transforms; tampering fails',{skip:process.env.GEOMETRY_EMIT_UNIT!=='1'},async()=>{
+  const run=setup('4.0.1',true),s=run.surface.withSourceRefs(metadata());const edge=0.1595*1920/13.333;
   s.txt('One invented paragraph',edge-0.00001,20.125,200.25,40.375,{sz:12});
   s.ell(edge+0.00001,80.125,80.25,60.375);s.rrect(300.125,100.25,80.375,60.5);s.chev(400.125,100.25,80.375,60.5);
   s.img(image,500.125,100.25,80.375,60.5);

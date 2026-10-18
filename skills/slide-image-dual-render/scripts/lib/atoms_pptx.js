@@ -109,6 +109,12 @@ function serializePptxText(runs){
 }
 
 function makePptxSurface(pptx, slide, opts={}){
+  // Opt-in PNG/JPEG snapshots cost one embedded media entry per call.
+  // Omitted/false retains legacy reads and PPTX pathname deduplication.
+  const snapshotImages = opts.snapshotImages;
+  if ('snapshotImages' in opts && typeof snapshotImages !== 'boolean') {
+    throw new TypeError('snapshotImages must be a boolean when provided');
+  }
   let textIndex = 0;
   const slideNo = Number(opts.slideNo) || 1;
   const textFit = opts.textFit && typeof opts.textFit === 'object' ? opts.textFit : {};
@@ -122,8 +128,12 @@ function makePptxSurface(pptx, slide, opts={}){
     img(p, x,y,w,h){
       const geometry = {x:ix(x), y:iy(y), w:ix(w), h:iy(h)};
       const refs = OM.sourceRefsFor(this, slideNo);
-      OM.recordImage(p, x,y,w,h, refs, emitterGeometry(pptx, geometry, refs));
-      slide.addImage({ path:p, ...geometry });
+      const snapshot = snapshotImages === true ? OM.captureImageSnapshot(p) : undefined;
+      OM.recordImage(p, x,y,w,h, refs, emitterGeometry(pptx, geometry, refs), snapshot);
+      // Data only: a path would let PptxGenJS alias distinct same-path snapshots.
+      // Supported altText preserves the legacy source-path description; objectName stays default.
+      const input = snapshot === undefined ? {path:p} : {data:OM.imageSnapshotData(snapshot, 'pptx'), altText:p};
+      slide.addImage({ ...input, ...geometry });
     },
     rrect(x,y,w,h,o={}){
       const geometry = {x:ix(x), y:iy(y), w:ix(w), h:iy(h)};
@@ -169,12 +179,29 @@ function makePptxSurface(pptx, slide, opts={}){
       const diagonal = sw !== 0 && sh !== 0;
       const direction = { ...(diagonal && sw < 0 ? {flipH:true} : {}),
         ...(diagonal && sh < 0 ? {flipV:true} : {}) };
-      // Record the actual flips, but keep this new signed geometry outside the
-      // existing qualified consumer profile until that profile is reviewed.
+      // Existing v1 consumers still reject signed direction. Only finite numeric
+      // authored inputs without caller transform options receive the v2 proof.
       const lineIssue = refs === undefined ? null : (o.flipH || o.flipV || o.rotate) ? 'UNSUPPORTED_LINE_TRANSFORM'
         : ((w < 0 || h < 0) && Number(w) !== 0 && Number(h) !== 0) ? 'UNSUPPORTED_LINE_DIRECTION' : null;
+      const evidence = emitterGeometry(pptx, geometry, refs, 'safe-line-geom-v1', lineIssue, direction);
+      if (evidence && evidence.reason === 'UNSUPPORTED_LINE_DIRECTION'
+          && [x,y,w,h].every(n => typeof n === 'number' && Number.isFinite(n))
+          && !['flipH','flipV','rotate'].some(key => key in Object(o))) {
+        // Shortest round-trip strings retain binary64 input values (and -0)
+        // through JSON. Rounded diagnostic bboxes cannot prove direction or
+        // projection. This is a producer claim, not semantic/runtime authority.
+        const exact = n => Object.is(n, -0) ? '-0' : String(n);
+        evidence.schemaVersion = 'slide-image-dual-render.emitter-geometry.v2';
+        evidence.status = 'PROJECTED';
+        evidence.reason = null;
+        evidence.sourceLine = {
+          units:'source-px', numberEncoding:'ecmascript-binary64-shortest-v1',
+          qualifier:'internal-sign-diagonal-v1',
+          x:exact(x), y:exact(y), w:exact(w), h:exact(h),
+        };
+      }
       OM.record({ type:'rule', x,y,w,h, editable:true, source:'surface.ln',
-        ...(refs === undefined ? {} : {emitterGeometry:emitterGeometry(pptx, geometry, refs, 'safe-line-geom-v1', lineIssue, direction)}) }, refs);
+        ...(refs === undefined ? {} : {emitterGeometry:evidence}) }, refs);
       slide.addShape(pptx.ShapeType.line, {
         ...geometry, ...direction,
         line:{ color:o.color||'2A4A6E', width:linePt(o.width), dashType:o.dash||'solid' },
