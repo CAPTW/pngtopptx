@@ -69,7 +69,8 @@ function makePptxSurface(pptx, slide, opts={}){
     img(p, x,y,w,h){ OM.recordImage(p, x,y,w,h); slide.addImage({ path:p, x:ix(x), y:iy(y), w:ix(w), h:iy(h) }); },
     rrect(x,y,w,h,o={}){
       OM.record({ type:'panel', x,y,w,h, editable:true, source:'surface.rrect' });
-      slide.addShape(pptx.ShapeType.roundRect, {
+      // PptxGenJS omits a zero rectRadius adjustment, leaving roundRect rounded.
+      slide.addShape(o.radius === 0 ? pptx.ShapeType.rect : pptx.ShapeType.roundRect, {
         x:ix(x), y:iy(y), w:ix(w), h:iy(h),
         fill:{ color:o.fill||'0B1B2D', transparency:o.fillTrans!=null?o.fillTrans:0 },
         line:{ color:o.line||'2A4A6E', width:linePt(o.lineW) },
